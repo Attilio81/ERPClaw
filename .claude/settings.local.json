@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.agno.com)",
+      "WebSearch",
+      "Bash(uv add:*)",
+      "Bash(cp:*)",
+      "Bash(uv run:*)",
+      "Read(//c/Users/Attilio/.local/bin//**)",
+      "Read(//c/Users/Attilio/AppData/Roaming/**)",
+      "Bash(echo $PATH)",
+      "Bash(cmd.exe:*)",
+      "Bash(rm:*)",
+      "Bash(uv python:*)",
+      "Bash(uv sync:*)",
+      "Bash(python:*)",
+      "Bash(taskkill:*)",
+      "Bash(git:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
