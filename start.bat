@@ -23,8 +23,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Avvio pannello web admin...
-start "ERPClaw Admin" cmd /k "uv run uvicorn erpclaw.web:app --reload"
+echo Avvio pannello web (admin + shop)...
+echo   Admin:  http://localhost:8000/admin
+echo   Shop:   http://localhost:8000/shop/register
+start "ERPClaw Web" cmd /k "uv run uvicorn erpclaw.web:app --reload"
 timeout /t 2 /nobreak >nul
 
 echo Avvio bot Telegram...

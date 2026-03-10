@@ -13,6 +13,10 @@ from erpclaw.erp_db import (
 init_db()
 
 app = FastAPI(title="ERPClaw Admin")
+
+from erpclaw.shop import router as shop_router
+app.include_router(shop_router)
+
 admin = Admin(app, engine, title="ERPClaw")
 
 
