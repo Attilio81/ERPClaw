@@ -26,6 +26,7 @@ Telegram → bot.py → agno Team (DeepSeek) → ERPTools        → erp.db
 - **Ordini** — creazione, gestione stati (`bozza → confermato → spedito → chiuso`)
 - **Messaggi vocali** — trascrizione automatica via OpenAI Whisper
 - **Pannello web** — admin CRUD su browser (FastAPI + SQLAdmin)
+- **Portale shop clienti** — i clienti si registrano e ordinano via browser (`/shop`), senza Telegram
 - **Memoria** — l'agente ricorda preferenze e contesto per ogni utente Telegram
 
 ## Stack tecnico
@@ -37,7 +38,7 @@ Telegram → bot.py → agno Team (DeepSeek) → ERPTools        → erp.db
 | Trascrizione voce | OpenAI Whisper |
 | Database ERP | SQLite + SQLAlchemy |
 | Bot Telegram | python-telegram-bot |
-| Pannello web | FastAPI + SQLAdmin |
+| Pannello web + shop | FastAPI + SQLAdmin + HTMX + Bootstrap 5 |
 | Package manager | [uv](https://github.com/astral-sh/uv) |
 | Python | 3.13 |
 
@@ -67,6 +68,7 @@ File `.env` richiesto:
 TELEGRAM_BOT_TOKEN=...
 DEEPSEEK_API_KEY=...
 OPENAI_API_KEY=...
+SHOP_SECRET_KEY=...   # opzionale, default dev value
 ```
 
 ## Avvio
@@ -75,9 +77,10 @@ OPENAI_API_KEY=...
 # Avvia solo il bot Telegram
 uv run erpclaw
 
-# Avvia solo il pannello web
+# Avvia solo il pannello web (include admin + shop)
 uv run uvicorn erpclaw.web:app --reload
-# → http://localhost:8000/admin
+# → Admin: http://localhost:8000/admin
+# → Shop:  http://localhost:8000/shop/register
 
 # Avvia entrambi (Windows)
 start.bat
@@ -118,12 +121,14 @@ ERPClaw: ✅ 10 articoli inseriti nel catalogo con prezzi +20%.
 erpclaw/
 ├── agent.py                    # agno Team + sub-agente ricerca fornitori
 ├── bot.py                      # bot Telegram (testo + voce)
-├── web.py                      # pannello admin FastAPI
+├── web.py                      # pannello admin FastAPI + shop router
+├── shop.py                     # portale ordini clienti (/shop)
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
 ├── erp_tools.py                # tool ERP (articoli, clienti, ordini, fornitori, indirizzi)
 ├── logistica_tools.py          # tool logistica (ubicazioni, stock, movimenti)
 ├── fornitore_research_tools.py # tool ricerca fornitori (PDF, web)
-└── config.py                   # caricamento .env
+├── config.py                   # caricamento .env
+└── templates/shop/             # template Jinja2 per il portale shop
 
 tests/                          # suite pytest (SQLite in-memory)
 docs/plans/                     # design doc e piani implementativi
@@ -138,7 +143,7 @@ Tutte le tabelle risiedono in `erp.db` (SQLite):
 | Gruppo | Tabelle |
 |--------|---------|
 | Catalogo | `articoli`, `stock_ubicazioni` |
-| Clienti | `clienti`, `indirizzi` |
+| Clienti | `clienti`, `indirizzi`, `clienti_auth` |
 | Ordini | `ordini`, `righe_ordine` |
 | Fornitori | `fornitori`, `cataloghi_fornitori` |
 | Magazzino | `magazzini`, `zone`, `scaffali`, `ripiani` |
@@ -161,7 +166,7 @@ Tutte le tabelle risiedono in `erp.db` (SQLite):
 ## Test
 
 ```bash
-uv run pytest tests/ -v
+uv run --no-sync python -m pytest tests/ -v
 ```
 
 ## Licenza

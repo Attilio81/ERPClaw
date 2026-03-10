@@ -158,6 +158,33 @@ Esiste anche un pannello di amministrazione accessibile da browser all'indirizzo
 
 ---
 
+## Portale ordini clienti (Shop)
+
+I tuoi clienti possono ordinare direttamente da browser, senza Telegram, accedendo al portale shop integrato.
+
+### Come accedere
+
+- **Registrazione:** `http://localhost:8000/shop/register`
+- **Accesso:** `http://localhost:8000/shop/login`
+
+Il portale è incluso nello stesso pannello web — non serve avviare nulla di separato.
+
+### Cosa possono fare i clienti
+
+1. **Registrarsi** con ragione sociale, email e password — vengono creati automaticamente nel database clienti.
+2. **Cercare articoli** in tempo reale per codice o descrizione (ricerca live mentre si digita).
+3. **Aggiungere al carrello** con la quantità desiderata — il carrello mostra il totale aggiornato.
+4. **Confermare l'ordine** con un click — l'ordine viene creato nel sistema con numero `WEB-DATA-NNNN`.
+5. **Consultare i propri ordini** con il dettaglio delle righe e lo stato attuale.
+
+### Per l'amministratore
+
+Gli ordini inseriti dal portale shop appaiono normalmente nella lista ordini (sia nell'admin web che nelle richieste al bot Telegram). Si riconoscono dal prefisso `WEB-` nel numero d'ordine.
+
+I clienti registrati via shop appaiono nell'anagrafica clienti con codice `WEB-<prefisso email>`.
+
+---
+
 ## Domande frequenti
 
 **Posso fare errori di battitura?**
