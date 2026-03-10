@@ -23,7 +23,9 @@ Telegram → bot.py → agno Team (DeepSeek) → ERPTools        → erp.db
 - **Importazione cataloghi** — parsing PDF, ricerca prezzi online, inserimento articoli con margine personalizzabile
 - **Clienti** — anagrafica con indirizzi multi-tipo (sede legale, spedizione, fatturazione)
 - **Fornitori** — anagrafica con indirizzi multi-tipo
-- **Ordini** — creazione, gestione stati (`bozza → confermato → spedito → chiuso`)
+- **Ordini clienti** — creazione, gestione stati (`bozza → confermato → spedito → chiuso`)
+- **Ordini fornitori** — creazione e gestione ordini di acquisto (`bozza → inviato → ricevuto`) con prezzo di acquisto per articolo
+- **Prezzi duali** — ogni articolo ha `prezzo_vendita` (ai clienti) e `prezzo_acquisto` (dai fornitori)
 - **Categorie articoli** — gestite dall'agente AI (`crea_categoria`, `assegna_categoria`, `lista_categorie`)
 - **Scorta minima** — soglia per articolo; alert automatico per il riordino (`articoli_sotto_scorta_minima`)
 - **Messaggi vocali** — trascrizione automatica via OpenAI Whisper
@@ -170,7 +172,7 @@ erpclaw/
 ├── web.py                      # pannello admin FastAPI + shop router
 ├── shop.py                     # portale ordini clienti (/shop)
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
-├── erp_tools.py                # tool ERP (articoli, categorie, scorta_minima, clienti, ordini, fornitori, indirizzi)
+├── erp_tools.py                # tool ERP (articoli con prezzo duale, categorie, scorta_minima, clienti, ordini clienti/fornitori, indirizzi)
 ├── logistica_tools.py          # tool logistica (ubicazioni, stock, movimenti)
 ├── fornitore_research_tools.py # tool ricerca fornitori (PDF, web)
 ├── config.py                   # caricamento .env
@@ -190,7 +192,8 @@ Tutte le tabelle risiedono in `erp.db` (SQLite):
 |--------|---------|
 | Catalogo | `articoli`, `categorie`, `stock_ubicazioni` |
 | Clienti | `clienti`, `indirizzi`, `clienti_auth` |
-| Ordini | `ordini`, `righe_ordine` |
+| Ordini clienti | `ordini`, `righe_ordine` |
+| Ordini fornitori | `ordini_fornitori`, `righe_ordini_fornitori` |
 | Fornitori | `fornitori`, `cataloghi_fornitori` |
 | Magazzino | `magazzini`, `zone`, `scaffali`, `ripiani` |
 | Movimenti | `movimenti_magazzino` |

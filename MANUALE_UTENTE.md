@@ -122,6 +122,41 @@ ERPClaw cerca online, trova le informazioni su Monge & C. S.p.A. (sede, fatturat
 
 ---
 
+### Ordini fornitori
+
+Puoi creare ordini di acquisto verso i fornitori, aggiungere gli articoli e seguire il percorso fino al ricevimento della merce.
+
+Gli ordini fornitori seguono questo percorso: **Bozza → Inviato → Ricevuto**
+
+**Esempi di richieste:**
+- *"crea un ordine fornitore per FOR01"*
+- *"aggiungi 10 pezzi di ART001 all'ordine ORF-0001"*
+- *"aggiungi 5 pezzi di ART002 all'ordine ORF-0001 a 4,50 euro"*
+- *"mostrami l'ordine fornitore ORF-0001"*
+- *"lista ordini fornitori in bozza"*
+- *"segna l'ordine ORF-0001 come inviato"*
+- *"l'ordine ORF-0001 è arrivato, segnalo come ricevuto"*
+
+Quando aggiungi una riga senza specificare il prezzo, ERPClaw usa automaticamente il **prezzo di acquisto** impostato sull'articolo. Se l'articolo non ha un prezzo di acquisto, dovrai specificarlo esplicitamente.
+
+Quando l'ordine passa in stato **Ricevuto**, ricordati di caricare la merce nelle ubicazioni di magazzino con i tool logistici.
+
+---
+
+### Prezzi articoli
+
+Ogni articolo ha ora due prezzi distinti:
+
+- **Prezzo di vendita** — il prezzo che applichi ai clienti
+- **Prezzo di acquisto** — il prezzo che paghi al fornitore (opzionale)
+
+**Esempi di richieste:**
+- *"crea l'articolo ART001 Crocchette Premium, prezzo vendita 25 euro, prezzo acquisto 15 euro"*
+- *"aggiorna il prezzo di acquisto di ART001 a 14 euro"*
+- *"mostrami la lista articoli"* — la tabella mostra entrambi i prezzi
+
+---
+
 ### Cataloghi fornitori
 
 Puoi chiedere a ERPClaw di scaricare i cataloghi PDF dei fornitori e importare automaticamente gli articoli.
