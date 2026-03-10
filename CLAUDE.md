@@ -48,7 +48,7 @@ Two independent databases, two entry points:
 
 | Group | Tables |
 |-------|--------|
-| Catalog | `articoli`, `stock_ubicazioni` |
+| Catalog | `articoli`, `categorie`, `stock_ubicazioni` |
 | Clients | `clienti`, `indirizzi`, `clienti_auth` |
 | Orders | `ordini`, `righe_ordine` |
 | Suppliers | `fornitori`, `cataloghi_fornitori` |
@@ -56,6 +56,8 @@ Two independent databases, two entry points:
 | Movements | `movimenti_magazzino` |
 
 `Articolo.giacenza` is a `column_property` (SQLAlchemy correlated subquery) summing `StockUbicazione.quantita`. It is **read-only** — never write to it directly. Stock is managed via `StockUbicazione` rows.
+
+`Articolo.scorta_minima` is a physical column (Integer, nullable, default 0). Used by the `articoli_sotto_scorta_minima` tool to identify items needing reorder (giacenza < scorta_minima).
 
 ### Entry Points
 1. **Telegram Bot** (`erpclaw/bot.py`): Handles text and voice. Voice → Whisper transcription → agent. The `user_id` passed to the agent is the Telegram numeric user ID (as string).
@@ -78,8 +80,8 @@ Always use the latest version of `agno`. The agno API changes frequently — whe
 
 ### Key Files
 - `erpclaw/config.py` — Loads `.env`; fails fast if variables are missing. Exports `SHOP_SECRET_KEY` with dev default.
-- `erpclaw/erp_db.py` — SQLAlchemy models and `get_session()` / `init_db()`. `init_db()` is called at import time in both `erp_tools.py`, `logistica_tools.py`, and `web.py`.
-- `erpclaw/erp_tools.py` — `ERPTools(Toolkit)`: tools for articles, clients, orders, suppliers, and addresses. Tools return markdown strings.
+- `erpclaw/erp_db.py` — SQLAlchemy models and `get_session()` / `init_db()`. `init_db()` is called at import time in both `erp_tools.py`, `logistica_tools.py`, and `web.py`. Also runs `_migrate()` to add missing columns to existing DBs (idempotent).
+- `erpclaw/erp_tools.py` — `ERPTools(Toolkit)`: tools for articles, clients, orders, suppliers, and addresses. Includes category tools (`crea_categoria`, `lista_categorie`, `assegna_categoria`) and `articoli_sotto_scorta_minima` for reorder alerts. Tools return markdown strings.
 - `erpclaw/logistica_tools.py` — `LogisticaTools(Toolkit)`: tools for warehouse locations (Magazzino→Zona→Scaffale→Ripiano), stock assignment/transfer, order discharge, and movement history.
 - `erpclaw/fornitore_research_tools.py` — `FornitoreResearchTools(Toolkit)`: PDF catalog download (httpx), parsing (pdfplumber), DB management.
 - `erpclaw/agent.py` — `team` (agno `Team`) + `fornitore_research_agent` sub-agent + `memory_manager`. The `Team` is the entry point; it holds `ERPTools` + `LogisticaTools`, `db`, memory, and delegates to `fornitore_research_agent`. Memory manager uses `deepseek-chat`; both team leader and sub-agent use `deepseek-reasoner`.

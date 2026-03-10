@@ -38,6 +38,45 @@ Controlla le giacenze, aggiungi nuovi articoli e tieni traccia di dove si trovan
 
 ---
 
+### Categorie articoli
+
+Puoi organizzare il catalogo raggruppando gli articoli in categorie. Le categorie vengono create e assegnate dall'agente direttamente dalla chat.
+
+**Creare una categoria:**
+- *"crea la categoria Alimenti Secchi"*
+- *"aggiungi la categoria Crocchette Gatto"*
+
+**Assegnare una categoria a un articolo:**
+- *"assegna la categoria Alimenti Secchi all'articolo ART001"*
+- *"metti l'articolo MONGE CAT nella categoria Crocchette Gatto"*
+
+**Vedere le categorie esistenti:**
+- *"mostrami le categorie"*
+- *"quali categorie abbiamo?"*
+
+Una volta assegnata, la categoria appare nel dettaglio dell'articolo e nei risultati di ricerca.
+
+---
+
+### Scorta minima e alert di riordino
+
+Puoi impostare una soglia di scorta minima per ogni articolo. Quando la giacenza scende sotto quella soglia, il sistema segnala che è il momento di riordinare.
+
+**Impostare la scorta minima:**
+- *"imposta la scorta minima di ART001 a 10 pezzi"*
+- *"la scorta minima del Monge Adult Pollo deve essere 20"*
+
+**Verificare gli articoli da riordinare:**
+- *"quali articoli sono sotto scorta minima?"*
+- *"dimmi cosa devo riordinare"*
+- *"articoli da riordinare"*
+
+ERPClaw risponde con l'elenco degli articoli la cui giacenza attuale è inferiore alla soglia impostata, indicando giacenza attuale e scorta minima per ciascuno.
+
+**Consiglio:** usa questo controllo periodicamente (ad esempio ogni settimana) per non rimanere mai a corto di prodotti importanti.
+
+---
+
 ### Ubicazioni di magazzino
 
 ERPClaw gestisce una struttura fisica a quattro livelli: **Magazzino → Zona → Scaffale → Ripiano**.

@@ -24,6 +24,8 @@ Telegram → bot.py → agno Team (DeepSeek) → ERPTools        → erp.db
 - **Clienti** — anagrafica con indirizzi multi-tipo (sede legale, spedizione, fatturazione)
 - **Fornitori** — anagrafica con indirizzi multi-tipo
 - **Ordini** — creazione, gestione stati (`bozza → confermato → spedito → chiuso`)
+- **Categorie articoli** — gestite dall'agente AI (`crea_categoria`, `assegna_categoria`, `lista_categorie`)
+- **Scorta minima** — soglia per articolo; alert automatico per il riordino (`articoli_sotto_scorta_minima`)
 - **Messaggi vocali** — trascrizione automatica via OpenAI Whisper
 - **Pannello web** — admin CRUD su browser (FastAPI + SQLAdmin)
 - **Portale shop clienti** — i clienti si registrano e ordinano via browser (`/shop`), senza Telegram
@@ -168,7 +170,7 @@ erpclaw/
 ├── web.py                      # pannello admin FastAPI + shop router
 ├── shop.py                     # portale ordini clienti (/shop)
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
-├── erp_tools.py                # tool ERP (articoli, clienti, ordini, fornitori, indirizzi)
+├── erp_tools.py                # tool ERP (articoli, categorie, scorta_minima, clienti, ordini, fornitori, indirizzi)
 ├── logistica_tools.py          # tool logistica (ubicazioni, stock, movimenti)
 ├── fornitore_research_tools.py # tool ricerca fornitori (PDF, web)
 ├── config.py                   # caricamento .env
@@ -186,7 +188,7 @@ Tutte le tabelle risiedono in `erp.db` (SQLite):
 
 | Gruppo | Tabelle |
 |--------|---------|
-| Catalogo | `articoli`, `stock_ubicazioni` |
+| Catalogo | `articoli`, `categorie`, `stock_ubicazioni` |
 | Clienti | `clienti`, `indirizzi`, `clienti_auth` |
 | Ordini | `ordini`, `righe_ordine` |
 | Fornitori | `fornitori`, `cataloghi_fornitori` |
