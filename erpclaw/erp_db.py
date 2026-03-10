@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from sqlalchemy import (
     Column, Integer, String, Float, Date, ForeignKey, Enum, Text, create_engine,
-    select, func, UniqueConstraint, DateTime
+    select, func, UniqueConstraint, DateTime, Boolean
 )
 from sqlalchemy.orm import DeclarativeBase, relationship, Session, column_property
 import enum
@@ -133,6 +133,17 @@ class Indirizzo(Base):
 
     cliente = relationship("Cliente", back_populates="indirizzi")
     fornitore = relationship("Fornitore", back_populates="indirizzi")
+
+
+class ClienteAuth(Base):
+    __tablename__ = "clienti_auth"
+
+    id = Column(Integer, primary_key=True)
+    cliente_id = Column(Integer, ForeignKey("clienti.id"), nullable=False, unique=True)
+    password_hash = Column(String, nullable=False)
+    confermato = Column(Boolean, nullable=False, default=True)
+
+    cliente = relationship("Cliente", backref="auth")
 
 
 class Magazzino(Base):
