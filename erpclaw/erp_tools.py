@@ -191,7 +191,7 @@ class ERPTools(Toolkit):
             ordine = Ordine(numero=numero, data=date.today(), cliente_id=cliente.id)
             s.add(ordine)
             s.commit()
-        return f"Ordine **{numero}** creato per {cliente.ragione_sociale} (stato: bozza) ✓\nAggiungi le righe con `aggiungi_riga`."
+            return f"Ordine **{numero}** creato per {cliente.ragione_sociale} (stato: bozza) ✓\nAggiungi le righe con `aggiungi_riga`."
 
     def aggiungi_riga(self, numero_ordine: str, codice_articolo: str, quantita: int) -> str:
         """Aggiunge una riga a un ordine esistente."""
@@ -218,9 +218,11 @@ class ERPTools(Toolkit):
             # ricalcola totale
             righe = s.query(RigaOrdine).filter_by(ordine_id=ordine.id).all()
             totale = sum(r.quantita * r.prezzo_unitario for r in righe)
-            subtotale = quantita * articolo.prezzo
+            articolo_desc = articolo.descrizione
+            articolo_prezzo = articolo.prezzo
+            subtotale = quantita * articolo_prezzo
         return (
-            f"Riga aggiunta: {quantita}x **{articolo.descrizione}** @ €{articolo.prezzo:.2f} = €{subtotale:.2f}\n"
+            f"Riga aggiunta: {quantita}x **{articolo_desc}** @ €{articolo_prezzo:.2f} = €{subtotale:.2f}\n"
             f"Totale ordine **{numero_ordine}**: €{totale:.2f}"
         )
 
