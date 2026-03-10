@@ -5,7 +5,7 @@ from sqladmin import Admin, ModelView
 
 from erpclaw.erp_db import (
     engine, init_db,
-    Articolo, Cliente, Ordine, RigaOrdine, Fornitore, CatalogoFornitore,
+    Categoria, Articolo, Cliente, Ordine, RigaOrdine, Fornitore, CatalogoFornitore,
     Indirizzo,
     Magazzino, Zona, Scaffale, Ripiano, StockUbicazione, MovimentoMagazzino,
 )
@@ -20,13 +20,25 @@ app.include_router(shop_router)
 admin = Admin(app, engine, title="ERPClaw")
 
 
+class CategoriaAdmin(ModelView, model=Categoria):
+    name = "Categoria"
+    name_plural = "Categorie"
+    icon = "fa-solid fa-tag"
+    column_list = [Categoria.nome]
+    column_searchable_list = [Categoria.nome]
+    column_sortable_list = [Categoria.nome]
+
+
 class ArticoloAdmin(ModelView, model=Articolo):
     name = "Articolo"
     name_plural = "Articoli"
     icon = "fa-solid fa-box"
-    column_list = [Articolo.codice, Articolo.descrizione, Articolo.prezzo, Articolo.giacenza]
+    column_list = [Articolo.codice, Articolo.descrizione, Articolo.categoria, Articolo.prezzo, Articolo.giacenza, Articolo.scorta_minima]
     column_searchable_list = [Articolo.codice, Articolo.descrizione]
     column_sortable_list = [Articolo.codice, Articolo.prezzo, Articolo.giacenza]
+    form_excluded_columns = ["giacenza"]
+    page_size = 100
+    page_size_options = [25, 50, 100, 200]
 
 
 class ClienteAdmin(ModelView, model=Cliente):
@@ -42,9 +54,10 @@ class OrdineAdmin(ModelView, model=Ordine):
     name = "Ordine"
     name_plural = "Ordini"
     icon = "fa-solid fa-file-invoice"
-    column_list = [Ordine.numero, Ordine.data, Ordine.cliente, Ordine.stato]
+    column_list = [Ordine.numero, Ordine.data, Ordine.stato, Ordine.cliente]
     column_searchable_list = [Ordine.numero]
     column_sortable_list = [Ordine.numero, Ordine.data, Ordine.stato]
+    column_details_list = [Ordine.numero, Ordine.data, Ordine.stato, Ordine.cliente, Ordine.righe]
 
 
 class RigaOrdineAdmin(ModelView, model=RigaOrdine):
@@ -52,6 +65,7 @@ class RigaOrdineAdmin(ModelView, model=RigaOrdine):
     name_plural = "Righe Ordine"
     icon = "fa-solid fa-list"
     column_list = [RigaOrdine.ordine, RigaOrdine.articolo, RigaOrdine.quantita, RigaOrdine.prezzo_unitario]
+    column_sortable_list = [RigaOrdine.quantita, RigaOrdine.prezzo_unitario]
 
 
 class FornitoreAdmin(ModelView, model=Fornitore):
@@ -129,6 +143,7 @@ class MovimentoMagazzinoAdmin(ModelView, model=MovimentoMagazzino):
     column_sortable_list = [MovimentoMagazzino.data_ora, MovimentoMagazzino.tipo]
 
 
+admin.add_view(CategoriaAdmin)
 admin.add_view(ArticoloAdmin)
 admin.add_view(ClienteAdmin)
 admin.add_view(OrdineAdmin)
