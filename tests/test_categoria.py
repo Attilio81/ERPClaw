@@ -56,7 +56,7 @@ def test_assegna_categoria(tools):
     t, make_session = tools
     t.crea_categoria("Bevande")
     with make_session() as s:
-        s.add(Articolo(codice="ART01", descrizione="Test", prezzo=1.0))
+        s.add(Articolo(codice="ART01", descrizione="Test", prezzo_vendita=1.0))
         s.commit()
     result = t.assegna_categoria("ART01", "Bevande")
     assert "ART01" in result
@@ -73,7 +73,7 @@ def test_assegna_categoria_articolo_non_trovato(tools):
 def test_assegna_categoria_non_trovata(tools):
     t, make_session = tools
     with make_session() as s:
-        s.add(Articolo(codice="ART01", descrizione="Test", prezzo=1.0))
+        s.add(Articolo(codice="ART01", descrizione="Test", prezzo_vendita=1.0))
         s.commit()
     result = t.assegna_categoria("ART01", "Inesistente")
     assert "non trovata" in result.lower() or "errore" in result.lower()
@@ -83,9 +83,9 @@ def test_articoli_sotto_scorta_minima(tools):
     t, make_session = tools
     with make_session() as s:
         # Articolo con scorta_minima=10, giacenza=0 → deve apparire
-        s.add(Articolo(codice="ART01", descrizione="Sotto soglia", prezzo=1.0, scorta_minima=10))
+        s.add(Articolo(codice="ART01", descrizione="Sotto soglia", prezzo_vendita=1.0, scorta_minima=10))
         # Articolo senza scorta_minima → non deve apparire
-        s.add(Articolo(codice="ART02", descrizione="Nessuna soglia", prezzo=1.0, scorta_minima=0))
+        s.add(Articolo(codice="ART02", descrizione="Nessuna soglia", prezzo_vendita=1.0, scorta_minima=0))
         s.commit()
     result = t.articoli_sotto_scorta_minima()
     assert "ART01" in result

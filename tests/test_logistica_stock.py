@@ -32,7 +32,7 @@ def tools(db_engine):
 
 @pytest.fixture
 def setup_db(db_session):
-    art = Articolo(codice="ART001", descrizione="Widget", prezzo=9.99)
+    art = Articolo(codice="ART001", descrizione="Widget", prezzo_vendita=9.99)
     mag = Magazzino(codice="MAG1", nome="Principale")
     db_session.add_all([art, mag]); db_session.flush()
     zona = Zona(codice="A", nome="Zona A", magazzino_id=mag.id)
@@ -80,7 +80,7 @@ def test_stock_per_articolo(tools, setup_db):
 
 
 def test_articoli_senza_ubicazione(tools, db_session):
-    art = Articolo(codice="ORFANO", descrizione="Orfano", prezzo=1.0)
+    art = Articolo(codice="ORFANO", descrizione="Orfano", prezzo_vendita=1.0)
     db_session.add(art)
     db_session.commit()
     result = tools.articoli_senza_ubicazione()

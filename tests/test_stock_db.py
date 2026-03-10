@@ -16,7 +16,7 @@ def _setup_ubicazione(session):
     return ripiano
 
 def test_stock_e_giacenza_derivata(session):
-    art = Articolo(codice="ART001", descrizione="Widget", prezzo=9.99)
+    art = Articolo(codice="ART001", descrizione="Widget", prezzo_vendita=9.99)
     session.add(art); session.flush()
     ripiano = _setup_ubicazione(session)
 
@@ -28,7 +28,7 @@ def test_stock_e_giacenza_derivata(session):
     assert art.giacenza == 50
 
 def test_movimento_magazzino(session):
-    art = Articolo(codice="ART002", descrizione="Gadget", prezzo=5.0)
+    art = Articolo(codice="ART002", descrizione="Gadget", prezzo_vendita=5.0)
     session.add(art); session.flush()
     ripiano = _setup_ubicazione(session)
 

@@ -9,6 +9,7 @@ from erpclaw.erp_db import (
     Fornitore, CatalogoFornitore,
     Indirizzo, TipoIndirizzo,
     Categoria,
+    OrdineFornitore, RigaOrdineFornitore, StatoOrdineFornitore,
 )
 
 init_db()
@@ -49,12 +50,13 @@ class ERPTools(Toolkit):
 
     # ── ARTICOLI ──────────────────────────────────────────────────────────────
 
-    def crea_articolo(self, codice: str, descrizione: str, prezzo: float) -> str:
-        """Crea un nuovo articolo nel catalogo."""
+    def crea_articolo(self, codice: str, descrizione: str, prezzo_vendita: float, prezzo_acquisto: float = None) -> str:
+        """Crea un nuovo articolo nel catalogo con prezzo di vendita e (opzionale) prezzo di acquisto."""
         with get_session() as s:
             if s.query(Articolo).filter_by(codice=codice).first():
                 return f"Errore: esiste già un articolo con codice {codice}."
-            s.add(Articolo(codice=codice, descrizione=descrizione, prezzo=prezzo))
+            s.add(Articolo(codice=codice, descrizione=descrizione,
+                           prezzo_vendita=prezzo_vendita, prezzo_acquisto=prezzo_acquisto))
             s.commit()
         return f"Articolo **{codice}** creato ✓"
 
@@ -65,10 +67,10 @@ class ERPTools(Toolkit):
             if not articoli:
                 return "Nessun articolo presente."
             rows = "\n".join(
-                f"| {a.codice} | {a.descrizione} | {a.categoria.nome if a.categoria else '—'} | €{a.prezzo:.2f} | {a.giacenza} |"
+                f"| {a.codice} | {a.descrizione} | {a.categoria.nome if a.categoria else '—'} | €{a.prezzo_vendita:.2f} | {f'€{a.prezzo_acquisto:.2f}' if a.prezzo_acquisto else '—'} | {a.giacenza} |"
                 for a in articoli
             )
-        return f"| Codice | Descrizione | Categoria | Prezzo | Giacenza |\n|--------|-------------|-----------|--------|----------|\n{rows}"
+        return f"| Codice | Descrizione | Categoria | Prezzo Vendita | Prezzo Acquisto | Giacenza |\n|--------|-------------|-----------|----------------|-----------------|----------|\n{rows}"
 
     def cerca_articolo(self, testo: str) -> str:
         """Cerca articoli per codice o descrizione (ricerca parziale)."""
@@ -80,21 +82,24 @@ class ERPTools(Toolkit):
             if not articoli:
                 return f"Nessun articolo trovato per '{testo}'."
             rows = "\n".join(
-                f"| {a.codice} | {a.descrizione} | {a.categoria.nome if a.categoria else '—'} | €{a.prezzo:.2f} | {a.giacenza} |"
+                f"| {a.codice} | {a.descrizione} | {a.categoria.nome if a.categoria else '—'} | €{a.prezzo_vendita:.2f} | {f'€{a.prezzo_acquisto:.2f}' if a.prezzo_acquisto else '—'} | {a.giacenza} |"
                 for a in articoli
             )
-        return f"| Codice | Descrizione | Categoria | Prezzo | Giacenza |\n|--------|-------------|-----------|--------|----------|\n{rows}"
+        return f"| Codice | Descrizione | Categoria | Prezzo Vendita | Prezzo Acquisto | Giacenza |\n|--------|-------------|-----------|----------------|-----------------|----------|\n{rows}"
 
-    def aggiorna_articolo(self, codice: str, descrizione: str = None, prezzo: float = None) -> str:
-        """Aggiorna descrizione o prezzo di un articolo esistente."""
+    def aggiorna_articolo(self, codice: str, descrizione: str = None,
+                          prezzo_vendita: float = None, prezzo_acquisto: float = None) -> str:
+        """Aggiorna descrizione, prezzo di vendita o prezzo di acquisto di un articolo esistente."""
         with get_session() as s:
             a = s.query(Articolo).filter_by(codice=codice).first()
             if not a:
                 return f"Errore: articolo {codice} non trovato."
             if descrizione is not None:
                 a.descrizione = descrizione
-            if prezzo is not None:
-                a.prezzo = prezzo
+            if prezzo_vendita is not None:
+                a.prezzo_vendita = prezzo_vendita
+            if prezzo_acquisto is not None:
+                a.prezzo_acquisto = prezzo_acquisto
             s.commit()
         return f"Articolo **{codice}** aggiornato ✓"
 
@@ -216,7 +221,7 @@ class ERPTools(Toolkit):
                     ordine_id=ordine.id,
                     articolo_id=articolo.id,
                     quantita=quantita,
-                    prezzo_unitario=articolo.prezzo,
+                    prezzo_unitario=articolo.prezzo_vendita,
                 )
                 s.add(riga)
             s.commit()
@@ -224,7 +229,7 @@ class ERPTools(Toolkit):
             righe = s.query(RigaOrdine).filter_by(ordine_id=ordine.id).all()
             totale = sum(r.quantita * r.prezzo_unitario for r in righe)
             articolo_desc = articolo.descrizione
-            articolo_prezzo = articolo.prezzo
+            articolo_prezzo = articolo.prezzo_vendita
             subtotale = quantita * articolo_prezzo
         return (
             f"Riga aggiunta: {quantita}x **{articolo_desc}** @ €{articolo_prezzo:.2f} = €{subtotale:.2f}\n"

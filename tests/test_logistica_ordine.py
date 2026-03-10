@@ -36,7 +36,7 @@ def tools(db_engine):
 
 @pytest.fixture
 def setup_ordine(db_session):
-    art = Articolo(codice="ART001", descrizione="Widget", prezzo=9.99)
+    art = Articolo(codice="ART001", descrizione="Widget", prezzo_vendita=9.99)
     cli = Cliente(codice="C001", ragione_sociale="Acme")
     mag = Magazzino(codice="MAG1", nome="Principale")
     db_session.add_all([art, cli, mag]); db_session.flush()
