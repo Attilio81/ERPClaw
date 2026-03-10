@@ -332,10 +332,12 @@ def _migrate(engine) -> None:
             existing = [r[1] for r in rows]
             if column not in existing:
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}"))
-        # Copy prezzo → prezzo_vendita for existing rows
-        conn.execute(text(
-            "UPDATE articoli SET prezzo_vendita = prezzo WHERE prezzo_vendita IS NULL AND prezzo IS NOT NULL"
-        ))
+        # Copy prezzo → prezzo_vendita only if old prezzo column still exists
+        articoli_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(articoli)")).fetchall()]
+        if "prezzo" in articoli_cols:
+            conn.execute(text(
+                "UPDATE articoli SET prezzo_vendita = prezzo WHERE prezzo_vendita IS NULL AND prezzo IS NOT NULL"
+            ))
         conn.commit()
 
 
