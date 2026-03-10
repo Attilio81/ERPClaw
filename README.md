@@ -86,7 +86,9 @@ uv run uvicorn erpclaw.web:app --reload
 start.bat
 ```
 
-## Esempio d'uso
+## Esempi d'uso
+
+### Ricerca fornitore e importazione catalogo
 
 ```
 Utente: mi cerchi il fornitore monge? ha dei cataloghi?
@@ -113,6 +115,48 @@ ERPClaw: Prezzi trovati su Trovaprezzi, Idealo, Zooplus.
 Utente: procedi con opzione 2
 
 ERPClaw: ✅ 10 articoli inseriti nel catalogo con prezzi +20%.
+```
+
+### Ordine completo con voce — dalla creazione cliente alla spedizione
+
+Chat reale registrata il 10/03/2026. L'utente usa un messaggio vocale per fare tutto in una volta.
+
+```
+Utente: [messaggio vocale 20s]
+ERPClaw: 🎤 Trascrizione: "Allora, mi dovresti inserire un ordine per il cliente,
+         me lo crei anche, che si chiama Aldo Panero, che abita in Viù Urbino 33,
+         e mi metti due pezzi di gamberetti e due pezzi di sfilaccetti."
+
+Utente: Via Urbino 33, Torino
+
+ERPClaw: Perfetto! Ho creato il cliente e l'ordine.
+         📋 Cliente: Aldo Panero (ALDO01)
+         🛒 Ordine ORD-0001 — bozza
+         | GEMON CAT BOCCONI ADULT SALMONE GAMBERETTI 415GR | 2 | €1,56 |
+         | MONGE CAT MONOPROTEICO SOLO POLLO 80GR SFILACCETTI | 2 | €2,16 |
+         💶 Totale: €3,72
+         📍 Indirizzo spedizione aggiunto: Via Urbino 33, 10100 Torino (TO)
+         Vuoi confermare l'ordine?
+
+Utente: Confermo
+
+ERPClaw: ✅ Ordine ORD-0001 confermato.
+         Vuoi gestire la logistica di magazzino ora?
+
+Utente: Sì, gestiamola, ci sono le qtà?
+
+ERPClaw: Stock disponibile in RIP1 (MAG1 › ZONA1 › SCAFF1):
+         GEMON GAMBERETTI: 50 disponibili, 2 richiesti ✅
+         MONGE SFILACCETTI: 50 disponibili, 2 richiesti ✅
+         Vuoi procedere con la spedizione?
+
+Utente: Sì
+
+ERPClaw: 🚚 Spedizione completata!
+         Ordine ORD-0001 → stato: spedito
+         Stock scaricato da RIP1: -2 gamberetti, -2 sfilaccetti
+         Stock aggiornato: 48 pezzi per ciascuno
+         ✅ Flusso completato in 8 passi — ordine pronto per la consegna.
 ```
 
 ## Struttura del progetto
