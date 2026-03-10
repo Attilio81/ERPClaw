@@ -56,6 +56,7 @@ class Articolo(Base):
     descrizione = Column(String, nullable=False)
     prezzo = Column(Float, nullable=False)
     categoria_id = Column(Integer, ForeignKey("categorie.id"), nullable=True)
+    scorta_minima = Column(Integer, nullable=True, default=0)
 
     def __str__(self):
         return f"{self.codice} — {self.descrizione}"
