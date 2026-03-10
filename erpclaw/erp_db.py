@@ -36,6 +36,12 @@ class TipoMovimento(str, enum.Enum):
     trasferimento = "trasferimento"
 
 
+class StatoOrdineFornitore(str, enum.Enum):
+    bozza = "bozza"
+    inviato = "inviato"
+    ricevuto = "ricevuto"
+
+
 class Categoria(Base):
     __tablename__ = "categorie"
 
@@ -54,7 +60,8 @@ class Articolo(Base):
     id = Column(Integer, primary_key=True)
     codice = Column(String, unique=True, nullable=False)
     descrizione = Column(String, nullable=False)
-    prezzo = Column(Float, nullable=False)
+    prezzo_vendita = Column(Float, nullable=False)
+    prezzo_acquisto = Column(Float, nullable=True)
     categoria_id = Column(Integer, ForeignKey("categorie.id"), nullable=True)
     scorta_minima = Column(Integer, nullable=True, default=0)
 
@@ -113,6 +120,36 @@ class RigaOrdine(Base):
     articolo = relationship("Articolo", back_populates="righe")
 
 
+class OrdineFornitore(Base):
+    __tablename__ = "ordini_fornitori"
+
+    id = Column(Integer, primary_key=True)
+    numero = Column(String, unique=True, nullable=False)
+    data = Column(Date, nullable=False, default=date.today)
+    fornitore_id = Column(Integer, ForeignKey("fornitori.id"), nullable=False)
+    stato = Column(Enum(StatoOrdineFornitore), nullable=False, default=StatoOrdineFornitore.bozza)
+    note = Column(Text, default="")
+
+    def __str__(self):
+        return self.numero
+
+    fornitore = relationship("Fornitore", back_populates="ordini_fornitori")
+    righe = relationship("RigaOrdineFornitore", back_populates="ordine_fornitore", cascade="all, delete-orphan")
+
+
+class RigaOrdineFornitore(Base):
+    __tablename__ = "righe_ordini_fornitori"
+
+    id = Column(Integer, primary_key=True)
+    ordine_fornitore_id = Column(Integer, ForeignKey("ordini_fornitori.id"), nullable=False)
+    articolo_id = Column(Integer, ForeignKey("articoli.id"), nullable=False)
+    quantita = Column(Integer, nullable=False)
+    prezzo_unitario = Column(Float, nullable=False)
+
+    ordine_fornitore = relationship("OrdineFornitore", back_populates="righe")
+    articolo = relationship("Articolo")
+
+
 class Fornitore(Base):
     __tablename__ = "fornitori"
 
@@ -126,6 +163,7 @@ class Fornitore(Base):
 
     cataloghi = relationship("CatalogoFornitore", back_populates="fornitore", cascade="all, delete-orphan")
     indirizzi = relationship("Indirizzo", back_populates="fornitore", cascade="all, delete-orphan")
+    ordini_fornitori = relationship("OrdineFornitore", back_populates="fornitore", cascade="all, delete-orphan")
 
 
 class CatalogoFornitore(Base):
@@ -283,6 +321,8 @@ def _migrate(engine) -> None:
     migrations = [
         ("articoli", "categoria_id", "INTEGER REFERENCES categorie(id)"),
         ("articoli", "scorta_minima", "INTEGER DEFAULT 0"),
+        ("articoli", "prezzo_vendita", "REAL"),
+        ("articoli", "prezzo_acquisto", "REAL"),
     ]
     with engine.connect() as conn:
         for table, column, col_def in migrations:
@@ -292,6 +332,10 @@ def _migrate(engine) -> None:
             existing = [r[1] for r in rows]
             if column not in existing:
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}"))
+        # Copy prezzo → prezzo_vendita for existing rows
+        conn.execute(text(
+            "UPDATE articoli SET prezzo_vendita = prezzo WHERE prezzo_vendita IS NULL AND prezzo IS NOT NULL"
+        ))
         conn.commit()
 
 
