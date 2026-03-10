@@ -36,6 +36,18 @@ class TipoMovimento(str, enum.Enum):
     trasferimento = "trasferimento"
 
 
+class Categoria(Base):
+    __tablename__ = "categorie"
+
+    id = Column(Integer, primary_key=True)
+    nome = Column(String, unique=True, nullable=False)
+
+    def __str__(self):
+        return self.nome
+
+    articoli = relationship("Articolo", back_populates="categoria")
+
+
 class Articolo(Base):
     __tablename__ = "articoli"
 
@@ -43,10 +55,15 @@ class Articolo(Base):
     codice = Column(String, unique=True, nullable=False)
     descrizione = Column(String, nullable=False)
     prezzo = Column(Float, nullable=False)
+    categoria_id = Column(Integer, ForeignKey("categorie.id"), nullable=True)
+
+    def __str__(self):
+        return f"{self.codice} — {self.descrizione}"
 
     righe = relationship("RigaOrdine", back_populates="articolo")
     stock_ubicazioni = relationship("StockUbicazione", back_populates="articolo")
     movimenti = relationship("MovimentoMagazzino", back_populates="articolo")
+    categoria = relationship("Categoria", back_populates="articoli")
 
 
 class Cliente(Base):
@@ -57,6 +74,9 @@ class Cliente(Base):
     ragione_sociale = Column(String, nullable=False)
     email = Column(String, default="")
     telefono = Column(String, default="")
+
+    def __str__(self):
+        return f"{self.codice} — {self.ragione_sociale}"
 
     ordini = relationship("Ordine", back_populates="cliente")
     indirizzi = relationship("Indirizzo", back_populates="cliente", cascade="all, delete-orphan")
@@ -70,6 +90,9 @@ class Ordine(Base):
     data = Column(Date, nullable=False, default=date.today)
     cliente_id = Column(Integer, ForeignKey("clienti.id"), nullable=False)
     stato = Column(Enum(StatoOrdine), nullable=False, default=StatoOrdine.bozza)
+
+    def __str__(self):
+        return self.numero
 
     cliente = relationship("Cliente", back_populates="ordini")
     righe = relationship("RigaOrdine", back_populates="ordine", cascade="all, delete-orphan")
@@ -153,6 +176,9 @@ class Magazzino(Base):
     codice = Column(String, unique=True, nullable=False)
     nome = Column(String, nullable=False)
 
+    def __str__(self):
+        return f"{self.codice} — {self.nome}"
+
     zone = relationship("Zona", back_populates="magazzino", cascade="all, delete-orphan")
 
 
@@ -163,6 +189,9 @@ class Zona(Base):
     codice = Column(String, unique=True, nullable=False)
     nome = Column(String, nullable=False)
     magazzino_id = Column(Integer, ForeignKey("magazzini.id"), nullable=False)
+
+    def __str__(self):
+        return f"{self.codice} — {self.nome}"
 
     magazzino = relationship("Magazzino", back_populates="zone")
     scaffali = relationship("Scaffale", back_populates="zona", cascade="all, delete-orphan")
@@ -176,6 +205,9 @@ class Scaffale(Base):
     nome = Column(String, nullable=False)
     zona_id = Column(Integer, ForeignKey("zone.id"), nullable=False)
 
+    def __str__(self):
+        return f"{self.codice} — {self.nome}"
+
     zona = relationship("Zona", back_populates="scaffali")
     ripiani = relationship("Ripiano", back_populates="scaffale", cascade="all, delete-orphan")
 
@@ -187,6 +219,9 @@ class Ripiano(Base):
     codice = Column(String, unique=True, nullable=False)
     nome = Column(String, nullable=False)
     scaffale_id = Column(Integer, ForeignKey("scaffali.id"), nullable=False)
+
+    def __str__(self):
+        return f"{self.codice} — {self.nome}"
 
     scaffale = relationship("Scaffale", back_populates="ripiani")
     stock = relationship("StockUbicazione", back_populates="ripiano", cascade="all, delete-orphan")
