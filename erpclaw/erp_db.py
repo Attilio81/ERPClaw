@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from sqlalchemy import (
     Column, Integer, String, Float, Date, ForeignKey, Enum, Text, create_engine,
-    select, func, UniqueConstraint, DateTime, Boolean
+    select, func, UniqueConstraint, DateTime, Boolean, text
 )
 from sqlalchemy.orm import DeclarativeBase, relationship, Session, column_property
 import enum
@@ -273,8 +273,26 @@ Articolo.giacenza = column_property(
 
 
 def init_db() -> None:
-    """Create all tables if they don't exist."""
+    """Create all tables if they don't exist, and migrate missing columns."""
     Base.metadata.create_all(bind=engine)
+    _migrate(engine)
+
+
+def _migrate(engine) -> None:
+    """Add missing columns to existing tables (idempotent)."""
+    migrations = [
+        ("articoli", "categoria_id", "INTEGER REFERENCES categorie(id)"),
+        ("articoli", "scorta_minima", "INTEGER DEFAULT 0"),
+    ]
+    with engine.connect() as conn:
+        for table, column, col_def in migrations:
+            rows = conn.execute(
+                text(f"PRAGMA table_info({table})")
+            ).fetchall()
+            existing = [r[1] for r in rows]
+            if column not in existing:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}"))
+        conn.commit()
 
 
 def get_session() -> Session:
