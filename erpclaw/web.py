@@ -8,6 +8,7 @@ from erpclaw.erp_db import (
     Categoria, Articolo, Cliente, Ordine, RigaOrdine, Fornitore, CatalogoFornitore,
     Indirizzo,
     Magazzino, Zona, Scaffale, Ripiano, StockUbicazione, MovimentoMagazzino,
+    OrdineFornitore, RigaOrdineFornitore,
 )
 
 init_db()
@@ -33,9 +34,9 @@ class ArticoloAdmin(ModelView, model=Articolo):
     name = "Articolo"
     name_plural = "Articoli"
     icon = "fa-solid fa-box"
-    column_list = [Articolo.codice, Articolo.descrizione, Articolo.categoria, Articolo.prezzo, Articolo.giacenza, Articolo.scorta_minima]
+    column_list = [Articolo.codice, Articolo.descrizione, Articolo.categoria, Articolo.prezzo_vendita, Articolo.prezzo_acquisto, Articolo.giacenza, Articolo.scorta_minima]
     column_searchable_list = [Articolo.codice, Articolo.descrizione]
-    column_sortable_list = [Articolo.codice, Articolo.prezzo, Articolo.giacenza]
+    column_sortable_list = [Articolo.codice, Articolo.prezzo_vendita, Articolo.giacenza]
     form_excluded_columns = ["giacenza"]
     page_size = 100
     page_size_options = [25, 50, 100, 200]
@@ -83,6 +84,24 @@ class CatalogoFornitoreAdmin(ModelView, model=CatalogoFornitore):
     icon = "fa-solid fa-file-pdf"
     column_list = [CatalogoFornitore.fornitore, CatalogoFornitore.data_scarico, CatalogoFornitore.percorso_file, CatalogoFornitore.url_originale]
     column_sortable_list = [CatalogoFornitore.data_scarico]
+
+
+class OrdineFornitoreAdmin(ModelView, model=OrdineFornitore):
+    name = "Ordine Fornitore"
+    name_plural = "Ordini Fornitori"
+    icon = "fa-solid fa-truck-ramp-box"
+    column_list = [OrdineFornitore.numero, OrdineFornitore.data, OrdineFornitore.fornitore, OrdineFornitore.stato]
+    column_searchable_list = [OrdineFornitore.numero]
+    column_sortable_list = [OrdineFornitore.numero, OrdineFornitore.data, OrdineFornitore.stato]
+    column_details_list = [OrdineFornitore.numero, OrdineFornitore.data, OrdineFornitore.stato, OrdineFornitore.fornitore, OrdineFornitore.righe, OrdineFornitore.note]
+
+
+class RigaOrdineFornitoreAdmin(ModelView, model=RigaOrdineFornitore):
+    name = "Riga Ordine Fornitore"
+    name_plural = "Righe Ordini Fornitori"
+    icon = "fa-solid fa-list"
+    column_list = [RigaOrdineFornitore.ordine_fornitore, RigaOrdineFornitore.articolo, RigaOrdineFornitore.quantita, RigaOrdineFornitore.prezzo_unitario]
+    column_sortable_list = [RigaOrdineFornitore.quantita, RigaOrdineFornitore.prezzo_unitario]
 
 
 class IndirizzoAdmin(ModelView, model=Indirizzo):
@@ -150,6 +169,8 @@ admin.add_view(OrdineAdmin)
 admin.add_view(RigaOrdineAdmin)
 admin.add_view(FornitoreAdmin)
 admin.add_view(CatalogoFornitoreAdmin)
+admin.add_view(OrdineFornitoreAdmin)
+admin.add_view(RigaOrdineFornitoreAdmin)
 admin.add_view(IndirizzoAdmin)
 admin.add_view(MagazzinoAdmin)
 admin.add_view(ZonaAdmin)
