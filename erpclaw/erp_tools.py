@@ -8,6 +8,7 @@ from erpclaw.erp_db import (
     Articolo, Cliente, Ordine, RigaOrdine, StatoOrdine,
     Fornitore, CatalogoFornitore,
     Indirizzo, TipoIndirizzo,
+    Categoria,
 )
 
 init_db()
@@ -41,15 +42,19 @@ class ERPTools(Toolkit):
         self.register(self.aggiungi_indirizzo_fornitore)
         self.register(self.lista_indirizzi_cliente)
         self.register(self.lista_indirizzi_fornitore)
+        self.register(self.crea_categoria)
+        self.register(self.lista_categorie)
+        self.register(self.assegna_categoria)
+        self.register(self.articoli_sotto_scorta_minima)
 
     # ── ARTICOLI ──────────────────────────────────────────────────────────────
 
-    def crea_articolo(self, codice: str, descrizione: str, prezzo: float, giacenza: int = 0) -> str:
+    def crea_articolo(self, codice: str, descrizione: str, prezzo: float) -> str:
         """Crea un nuovo articolo nel catalogo."""
         with get_session() as s:
             if s.query(Articolo).filter_by(codice=codice).first():
                 return f"Errore: esiste già un articolo con codice {codice}."
-            s.add(Articolo(codice=codice, descrizione=descrizione, prezzo=prezzo, giacenza=giacenza))
+            s.add(Articolo(codice=codice, descrizione=descrizione, prezzo=prezzo))
             s.commit()
         return f"Articolo **{codice}** creato ✓"
 
@@ -60,10 +65,10 @@ class ERPTools(Toolkit):
             if not articoli:
                 return "Nessun articolo presente."
             rows = "\n".join(
-                f"| {a.codice} | {a.descrizione} | €{a.prezzo:.2f} | {a.giacenza} |"
+                f"| {a.codice} | {a.descrizione} | {a.categoria.nome if a.categoria else '—'} | €{a.prezzo:.2f} | {a.giacenza} |"
                 for a in articoli
             )
-        return f"| Codice | Descrizione | Prezzo | Giacenza |\n|--------|-------------|--------|----------|\n{rows}"
+        return f"| Codice | Descrizione | Categoria | Prezzo | Giacenza |\n|--------|-------------|-----------|--------|----------|\n{rows}"
 
     def cerca_articolo(self, testo: str) -> str:
         """Cerca articoli per codice o descrizione (ricerca parziale)."""
@@ -75,10 +80,10 @@ class ERPTools(Toolkit):
             if not articoli:
                 return f"Nessun articolo trovato per '{testo}'."
             rows = "\n".join(
-                f"| {a.codice} | {a.descrizione} | €{a.prezzo:.2f} | {a.giacenza} |"
+                f"| {a.codice} | {a.descrizione} | {a.categoria.nome if a.categoria else '—'} | €{a.prezzo:.2f} | {a.giacenza} |"
                 for a in articoli
             )
-        return f"| Codice | Descrizione | Prezzo | Giacenza |\n|--------|-------------|--------|----------|\n{rows}"
+        return f"| Codice | Descrizione | Categoria | Prezzo | Giacenza |\n|--------|-------------|-----------|--------|----------|\n{rows}"
 
     def aggiorna_articolo(self, codice: str, descrizione: str = None, prezzo: float = None) -> str:
         """Aggiorna descrizione o prezzo di un articolo esistente."""
@@ -453,3 +458,54 @@ class ERPTools(Toolkit):
                 for c in f.cataloghi
             )
         return f"| ID | Data | File | URL Originale |\n|----|------|------|---------------|\n{rows}"
+
+    # ── CATEGORIE ─────────────────────────────────────────────────────────────
+
+    def crea_categoria(self, nome: str) -> str:
+        """Crea una nuova categoria articoli. Usa prima lista_categorie per evitare duplicati."""
+        with get_session() as s:
+            if s.query(Categoria).filter_by(nome=nome).first():
+                return f"Errore: la categoria **{nome}** esiste già."
+            s.add(Categoria(nome=nome))
+            s.commit()
+        return f"Categoria **{nome}** creata ✓"
+
+    def lista_categorie(self) -> str:
+        """Restituisce l'elenco di tutte le categorie articoli disponibili."""
+        with get_session() as s:
+            cats = s.query(Categoria).order_by(Categoria.nome).all()
+            if not cats:
+                return "Nessuna categoria presente."
+            rows = "\n".join(f"- {c.nome}" for c in cats)
+        return f"**Categorie disponibili:**\n{rows}"
+
+    def assegna_categoria(self, codice_articolo: str, nome_categoria: str) -> str:
+        """Assegna una categoria a un articolo esistente."""
+        with get_session() as s:
+            articolo = s.query(Articolo).filter_by(codice=codice_articolo).first()
+            if not articolo:
+                return f"Errore: articolo **{codice_articolo}** non trovato."
+            categoria = s.query(Categoria).filter_by(nome=nome_categoria).first()
+            if not categoria:
+                return f"Errore: categoria **{nome_categoria}** non trovata. Usa crea_categoria prima."
+            articolo.categoria_id = categoria.id
+            s.commit()
+        return f"Articolo **{codice_articolo}** assegnato alla categoria **{nome_categoria}** ✓"
+
+    def articoli_sotto_scorta_minima(self) -> str:
+        """Restituisce gli articoli con giacenza inferiore alla scorta minima impostata. Usare per decidere quando riordinare dal fornitore."""
+        with get_session() as s:
+            articoli = (
+                s.query(Articolo)
+                .filter(Articolo.scorta_minima > 0)
+                .filter(Articolo.giacenza < Articolo.scorta_minima)
+                .order_by(Articolo.codice)
+                .all()
+            )
+            if not articoli:
+                return "Nessun articolo sotto scorta minima."
+            rows = "\n".join(
+                f"| {a.codice} | {a.descrizione} | {a.giacenza} | {a.scorta_minima} |"
+                for a in articoli
+            )
+        return f"**Articoli da riordinare (giacenza < scorta minima):**\n\n| Codice | Descrizione | Giacenza | Scorta Min |\n|--------|-------------|----------|------------|\n{rows}"
