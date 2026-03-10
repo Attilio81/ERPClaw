@@ -47,6 +47,11 @@ class ERPTools(Toolkit):
         self.register(self.lista_categorie)
         self.register(self.assegna_categoria)
         self.register(self.articoli_sotto_scorta_minima)
+        self.register(self.crea_ordine_fornitore)
+        self.register(self.aggiungi_riga_ordine_fornitore)
+        self.register(self.lista_ordini_fornitori)
+        self.register(self.visualizza_ordine_fornitore)
+        self.register(self.avanza_stato_ordine_fornitore)
 
     # ── ARTICOLI ──────────────────────────────────────────────────────────────
 
@@ -514,3 +519,128 @@ class ERPTools(Toolkit):
                 for a in articoli
             )
         return f"**Articoli da riordinare (giacenza < scorta minima):**\n\n| Codice | Descrizione | Giacenza | Scorta Min |\n|--------|-------------|----------|------------|\n{rows}"
+
+    # ── ORDINI FORNITORI ───────────────────────────────────────────────────────
+
+    def crea_ordine_fornitore(self, fornitore_codice: str, note: str = "") -> str:
+        """Crea un nuovo ordine di acquisto per un fornitore in stato bozza. Usa aggiungi_riga_ordine_fornitore per aggiungere articoli."""
+        with get_session() as s:
+            fornitore = s.query(Fornitore).filter_by(codice=fornitore_codice).first()
+            if not fornitore:
+                return f"Errore: fornitore {fornitore_codice} non trovato."
+            count = s.query(OrdineFornitore).count()
+            numero = f"ORF-{count + 1:04d}"
+            from datetime import date
+            ordine = OrdineFornitore(
+                numero=numero,
+                data=date.today(),
+                fornitore_id=fornitore.id,
+                note=note,
+            )
+            s.add(ordine)
+            s.commit()
+            ragione_sociale = fornitore.ragione_sociale
+        return (
+            f"Ordine fornitore **{numero}** creato per {ragione_sociale} (stato: bozza) ✓\n"
+            f"Aggiungi le righe con `aggiungi_riga_ordine_fornitore`."
+        )
+
+    def aggiungi_riga_ordine_fornitore(self, numero_ordine: str, codice_articolo: str,
+                                        quantita: int, prezzo_unitario: float = None) -> str:
+        """Aggiunge una riga a un ordine fornitore. Se prezzo_unitario è omesso, usa il prezzo_acquisto dell'articolo."""
+        with get_session() as s:
+            ordine = s.query(OrdineFornitore).filter_by(numero=numero_ordine).first()
+            if not ordine:
+                return f"Errore: ordine fornitore {numero_ordine} non trovato."
+            articolo = s.query(Articolo).filter_by(codice=codice_articolo).first()
+            if not articolo:
+                return f"Errore: articolo {codice_articolo} non trovato."
+            prezzo = prezzo_unitario if prezzo_unitario is not None else articolo.prezzo_acquisto
+            if prezzo is None:
+                return (
+                    f"Errore: l'articolo {codice_articolo} non ha un prezzo di acquisto. "
+                    f"Specifica prezzo_unitario."
+                )
+            riga = s.query(RigaOrdineFornitore).filter_by(
+                ordine_fornitore_id=ordine.id, articolo_id=articolo.id
+            ).first()
+            if riga:
+                riga.quantita += quantita
+            else:
+                riga = RigaOrdineFornitore(
+                    ordine_fornitore_id=ordine.id,
+                    articolo_id=articolo.id,
+                    quantita=quantita,
+                    prezzo_unitario=prezzo,
+                )
+                s.add(riga)
+            s.commit()
+            righe = s.query(RigaOrdineFornitore).filter_by(ordine_fornitore_id=ordine.id).all()
+            totale = sum(r.quantita * r.prezzo_unitario for r in righe)
+            articolo_desc = articolo.descrizione
+            subtotale = quantita * prezzo
+        return (
+            f"Riga aggiunta: {quantita}x **{articolo_desc}** @ €{prezzo:.2f} = €{subtotale:.2f}\n"
+            f"Totale ordine **{numero_ordine}**: €{totale:.2f}"
+        )
+
+    def lista_ordini_fornitori(self, stato: str = None) -> str:
+        """Elenca gli ordini fornitore, opzionalmente filtrati per stato (bozza/inviato/ricevuto)."""
+        with get_session() as s:
+            q = s.query(OrdineFornitore)
+            if stato:
+                try:
+                    q = q.filter(OrdineFornitore.stato == StatoOrdineFornitore(stato))
+                except ValueError:
+                    return f"Errore: stato '{stato}' non valido. Valori: bozza, inviato, ricevuto."
+            ordini = q.order_by(OrdineFornitore.numero).all()
+            if not ordini:
+                return "Nessun ordine fornitore trovato."
+            rows = "\n".join(
+                f"| {o.numero} | {o.data} | {o.fornitore.ragione_sociale} | {o.stato.value} |"
+                for o in ordini
+            )
+        return f"| Numero | Data | Fornitore | Stato |\n|--------|------|-----------|-------|\n{rows}"
+
+    def visualizza_ordine_fornitore(self, numero_ordine: str) -> str:
+        """Mostra le righe e il totale di un ordine fornitore."""
+        with get_session() as s:
+            ordine = s.query(OrdineFornitore).filter_by(numero=numero_ordine).first()
+            if not ordine:
+                return f"Errore: ordine fornitore {numero_ordine} non trovato."
+            righe = s.query(RigaOrdineFornitore).filter_by(ordine_fornitore_id=ordine.id).all()
+            header = (
+                f"**Ordine Fornitore {ordine.numero}** – {ordine.fornitore.ragione_sociale}\n"
+                f"Data: {ordine.data}  |  Stato: {ordine.stato.value}\n\n"
+                f"| Codice | Descrizione | Qtà | Prezzo | Subtotale |\n"
+                f"|--------|-------------|-----|--------|----------|\n"
+            )
+            if not righe:
+                return header + "_Nessuna riga._"
+            rows = "\n".join(
+                f"| {r.articolo.codice} | {r.articolo.descrizione} | {r.quantita} | €{r.prezzo_unitario:.2f} | €{r.quantita * r.prezzo_unitario:.2f} |"
+                for r in righe
+            )
+            totale = sum(r.quantita * r.prezzo_unitario for r in righe)
+        return header + rows + f"\n\n**Totale: €{totale:.2f}**"
+
+    def avanza_stato_ordine_fornitore(self, numero_ordine: str) -> str:
+        """Avanza lo stato dell'ordine fornitore: bozza→inviato→ricevuto. Quando ricevuto, usare i tool di logistica per caricare la merce in magazzino."""
+        transizioni = {
+            StatoOrdineFornitore.bozza: StatoOrdineFornitore.inviato,
+            StatoOrdineFornitore.inviato: StatoOrdineFornitore.ricevuto,
+        }
+        with get_session() as s:
+            ordine = s.query(OrdineFornitore).filter_by(numero=numero_ordine).first()
+            if not ordine:
+                return f"Errore: ordine fornitore {numero_ordine} non trovato."
+            nuovo_stato = transizioni.get(ordine.stato)
+            if nuovo_stato is None:
+                return f"Errore: l'ordine **{numero_ordine}** è già in stato **ricevuto**."
+            ordine.stato = nuovo_stato
+            s.commit()
+            stato_str = nuovo_stato.value
+        msg = f"Ordine **{numero_ordine}** → stato **{stato_str}** ✓"
+        if nuovo_stato == StatoOrdineFornitore.ricevuto:
+            msg += "\nMerce attesa in arrivo. Usare i tool di logistica per caricare gli articoli nelle ubicazioni di magazzino."
+        return msg
