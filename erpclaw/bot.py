@@ -30,7 +30,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.info("Message from %s: %s", update.effective_user.username, user_text)
 
     response = await run_agent(user_text, user_id=str(update.effective_user.id))
-    await update.message.reply_text(response)
+    try:
+        await update.message.reply_text(response, parse_mode="Markdown")
+    except Exception:
+        await update.message.reply_text(response)
 
 
 async def transcribe_audio(file_path: str) -> str:
@@ -59,7 +62,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text(f"🎤 Trascrizione: {transcript}")
 
     response = await run_agent(transcript, user_id=str(update.effective_user.id))
-    await update.message.reply_text(response)
+    try:
+        await update.message.reply_text(response, parse_mode="Markdown")
+    except Exception:
+        await update.message.reply_text(response)
 
 
 def create_app() -> Application:

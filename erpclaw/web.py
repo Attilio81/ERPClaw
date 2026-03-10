@@ -3,7 +3,12 @@
 from fastapi import FastAPI
 from sqladmin import Admin, ModelView
 
-from erpclaw.erp_db import engine, init_db, Articolo, Cliente, Ordine, RigaOrdine, Fornitore, CatalogoFornitore
+from erpclaw.erp_db import (
+    engine, init_db,
+    Articolo, Cliente, Ordine, RigaOrdine, Fornitore, CatalogoFornitore,
+    Indirizzo,
+    Magazzino, Zona, Scaffale, Ripiano, StockUbicazione, MovimentoMagazzino,
+)
 
 init_db()
 
@@ -62,9 +67,74 @@ class CatalogoFornitoreAdmin(ModelView, model=CatalogoFornitore):
     column_sortable_list = [CatalogoFornitore.data_scarico]
 
 
+class IndirizzoAdmin(ModelView, model=Indirizzo):
+    name = "Indirizzo"
+    name_plural = "Indirizzi"
+    icon = "fa-solid fa-map-marker-alt"
+    column_list = [Indirizzo.tipo, Indirizzo.via, Indirizzo.citta, Indirizzo.cap, Indirizzo.paese]
+    column_searchable_list = [Indirizzo.citta, Indirizzo.cap]
+    column_sortable_list = [Indirizzo.tipo, Indirizzo.citta]
+
+
+class MagazzinoAdmin(ModelView, model=Magazzino):
+    name = "Magazzino"
+    name_plural = "Magazzini"
+    icon = "fa-solid fa-warehouse"
+    column_list = [Magazzino.codice, Magazzino.nome]
+    column_searchable_list = [Magazzino.codice, Magazzino.nome]
+
+
+class ZonaAdmin(ModelView, model=Zona):
+    name = "Zona"
+    name_plural = "Zone"
+    icon = "fa-solid fa-layer-group"
+    column_list = [Zona.codice, Zona.nome, Zona.magazzino]
+    column_searchable_list = [Zona.codice, Zona.nome]
+
+
+class ScaffaleAdmin(ModelView, model=Scaffale):
+    name = "Scaffale"
+    name_plural = "Scaffali"
+    icon = "fa-solid fa-th-large"
+    column_list = [Scaffale.codice, Scaffale.nome, Scaffale.zona]
+    column_searchable_list = [Scaffale.codice, Scaffale.nome]
+
+
+class RipianoAdmin(ModelView, model=Ripiano):
+    name = "Ripiano"
+    name_plural = "Ripiani"
+    icon = "fa-solid fa-bars"
+    column_list = [Ripiano.codice, Ripiano.nome, Ripiano.scaffale]
+    column_searchable_list = [Ripiano.codice, Ripiano.nome]
+
+
+class StockUbicazioneAdmin(ModelView, model=StockUbicazione):
+    name = "Stock Ubicazione"
+    name_plural = "Stock Ubicazioni"
+    icon = "fa-solid fa-cubes"
+    column_list = [StockUbicazione.articolo, StockUbicazione.ripiano, StockUbicazione.quantita]
+    column_sortable_list = [StockUbicazione.quantita]
+
+
+class MovimentoMagazzinoAdmin(ModelView, model=MovimentoMagazzino):
+    name = "Movimento Magazzino"
+    name_plural = "Movimenti Magazzino"
+    icon = "fa-solid fa-arrows-alt"
+    column_list = [MovimentoMagazzino.data_ora, MovimentoMagazzino.tipo, MovimentoMagazzino.articolo,
+                   MovimentoMagazzino.quantita, MovimentoMagazzino.ordine]
+    column_sortable_list = [MovimentoMagazzino.data_ora, MovimentoMagazzino.tipo]
+
+
 admin.add_view(ArticoloAdmin)
 admin.add_view(ClienteAdmin)
 admin.add_view(OrdineAdmin)
 admin.add_view(RigaOrdineAdmin)
 admin.add_view(FornitoreAdmin)
 admin.add_view(CatalogoFornitoreAdmin)
+admin.add_view(IndirizzoAdmin)
+admin.add_view(MagazzinoAdmin)
+admin.add_view(ZonaAdmin)
+admin.add_view(ScaffaleAdmin)
+admin.add_view(RipianoAdmin)
+admin.add_view(StockUbicazioneAdmin)
+admin.add_view(MovimentoMagazzinoAdmin)

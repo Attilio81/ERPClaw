@@ -7,6 +7,7 @@ from erpclaw.erp_db import (
     get_session, init_db,
     Articolo, Cliente, Ordine, RigaOrdine, StatoOrdine,
     Fornitore, CatalogoFornitore,
+    Indirizzo, TipoIndirizzo,
 )
 
 init_db()
@@ -19,7 +20,6 @@ class ERPTools(Toolkit):
         self.register(self.lista_articoli)
         self.register(self.cerca_articolo)
         self.register(self.aggiorna_articolo)
-        self.register(self.aggiorna_giacenza)
         self.register(self.crea_cliente)
         self.register(self.lista_clienti)
         self.register(self.cerca_cliente)
@@ -37,6 +37,10 @@ class ERPTools(Toolkit):
         self.register(self.cerca_fornitore)
         self.register(self.aggiorna_fornitore)
         self.register(self.lista_cataloghi_fornitore)
+        self.register(self.aggiungi_indirizzo_cliente)
+        self.register(self.aggiungi_indirizzo_fornitore)
+        self.register(self.lista_indirizzi_cliente)
+        self.register(self.lista_indirizzi_fornitore)
 
     # ── ARTICOLI ──────────────────────────────────────────────────────────────
 
@@ -89,19 +93,6 @@ class ERPTools(Toolkit):
             s.commit()
         return f"Articolo **{codice}** aggiornato ✓"
 
-    def aggiorna_giacenza(self, codice: str, delta: int) -> str:
-        """Aumenta o diminuisce la giacenza di un articolo (usa delta negativo per decrementare)."""
-        with get_session() as s:
-            a = s.query(Articolo).filter_by(codice=codice).first()
-            if not a:
-                return f"Errore: articolo {codice} non trovato."
-            nuova = a.giacenza + delta
-            if nuova < 0:
-                return f"Errore: giacenza insufficiente (attuale: {a.giacenza}, richiesto: {delta})."
-            a.giacenza = nuova
-            s.commit()
-            return f"Giacenza **{codice}** aggiornata: {nuova} unità ✓"
-
     # ── CLIENTI ───────────────────────────────────────────────────────────────
 
     def crea_cliente(self, codice: str, ragione_sociale: str, email: str = "", telefono: str = "") -> str:
@@ -139,6 +130,37 @@ class ERPTools(Toolkit):
                 for c in clienti
             )
         return f"| Codice | Ragione Sociale | Email | Telefono |\n|--------|-----------------|-------|----------|\n{rows}"
+
+    def aggiungi_indirizzo_cliente(self, codice_cliente: str, tipo: str, via: str,
+                                   cap: str, citta: str, provincia: str,
+                                   paese: str = "IT", note: str = "") -> str:
+        """Aggiunge un indirizzo (sede_legale/spedizione/fatturazione/altro) a un cliente."""
+        with get_session() as s:
+            c = s.query(Cliente).filter_by(codice=codice_cliente).first()
+            if not c:
+                return f"Errore: cliente {codice_cliente} non trovato."
+            try:
+                t = TipoIndirizzo(tipo)
+            except ValueError:
+                return f"Errore: tipo '{tipo}' non valido. Valori: sede_legale, spedizione, fatturazione, altro."
+            s.add(Indirizzo(tipo=t, via=via, cap=cap, citta=citta,
+                            provincia=provincia, paese=paese, note=note, cliente_id=c.id))
+            s.commit()
+        return f"Indirizzo **{tipo}** aggiunto al cliente {codice_cliente} ✓"
+
+    def lista_indirizzi_cliente(self, codice_cliente: str) -> str:
+        """Mostra tutti gli indirizzi di un cliente."""
+        with get_session() as s:
+            c = s.query(Cliente).filter_by(codice=codice_cliente).first()
+            if not c:
+                return f"Errore: cliente {codice_cliente} non trovato."
+            if not c.indirizzi:
+                return f"Nessun indirizzo per il cliente {codice_cliente}."
+            rows = "\n".join(
+                f"| {i.tipo.value} | {i.via} | {i.cap} {i.citta} ({i.provincia}) | {i.paese} |"
+                for i in c.indirizzi
+            )
+        return f"| Tipo | Via | Città | Paese |\n|------|-----|-------|-------|\n{rows}"
 
     def aggiorna_cliente(self, codice: str, ragione_sociale: str = None, email: str = None, telefono: str = None) -> str:
         """Aggiorna i dati di un cliente esistente."""
@@ -228,6 +250,15 @@ class ERPTools(Toolkit):
             header = (
                 f"**Ordine {ordine.numero}** – {ordine.cliente.ragione_sociale}\n"
                 f"Data: {ordine.data}  |  Stato: {ordine.stato.value}\n\n"
+            )
+            # indirizzo spedizione cliente
+            addr = next(
+                (i for i in ordine.cliente.indirizzi if i.tipo.value == "spedizione"),
+                next((i for i in ordine.cliente.indirizzi if i.tipo.value == "sede_legale"), None)
+            )
+            if addr:
+                header += f"Spedizione: {addr.via}, {addr.cap} {addr.citta} ({addr.provincia})\n\n"
+            header += (
                 f"| Codice | Descrizione | Qtà | Prezzo | Subtotale |\n"
                 f"|--------|-------------|-----|--------|-----------|\n"
             )
@@ -375,6 +406,37 @@ class ERPTools(Toolkit):
                 f.settore = settore
             s.commit()
         return f"Fornitore **{codice}** aggiornato ✓"
+
+    def aggiungi_indirizzo_fornitore(self, codice_fornitore: str, tipo: str, via: str,
+                                     cap: str, citta: str, provincia: str,
+                                     paese: str = "IT", note: str = "") -> str:
+        """Aggiunge un indirizzo (sede_legale/spedizione/fatturazione/altro) a un fornitore."""
+        with get_session() as s:
+            f = s.query(Fornitore).filter_by(codice=codice_fornitore).first()
+            if not f:
+                return f"Errore: fornitore {codice_fornitore} non trovato."
+            try:
+                t = TipoIndirizzo(tipo)
+            except ValueError:
+                return f"Errore: tipo '{tipo}' non valido. Valori: sede_legale, spedizione, fatturazione, altro."
+            s.add(Indirizzo(tipo=t, via=via, cap=cap, citta=citta,
+                            provincia=provincia, paese=paese, note=note, fornitore_id=f.id))
+            s.commit()
+        return f"Indirizzo **{tipo}** aggiunto al fornitore {codice_fornitore} ✓"
+
+    def lista_indirizzi_fornitore(self, codice_fornitore: str) -> str:
+        """Mostra tutti gli indirizzi di un fornitore."""
+        with get_session() as s:
+            f = s.query(Fornitore).filter_by(codice=codice_fornitore).first()
+            if not f:
+                return f"Errore: fornitore {codice_fornitore} non trovato."
+            if not f.indirizzi:
+                return f"Nessun indirizzo per il fornitore {codice_fornitore}."
+            rows = "\n".join(
+                f"| {i.tipo.value} | {i.via} | {i.cap} {i.citta} ({i.provincia}) | {i.paese} |"
+                for i in f.indirizzi
+            )
+        return f"| Tipo | Via | Città | Paese |\n|------|-----|-------|-------|\n{rows}"
 
     def lista_cataloghi_fornitore(self, codice_fornitore: str) -> str:
         """Elenca i cataloghi scaricati per un fornitore."""

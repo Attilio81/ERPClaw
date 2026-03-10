@@ -7,6 +7,7 @@ from agno.tools.duckduckgo import DuckDuckGoTools
 
 from erpclaw.erp_tools import ERPTools
 from erpclaw.fornitore_research_tools import FornitoreResearchTools
+from erpclaw.logistica_tools import LogisticaTools
 
 db = AsyncSqliteDb(db_file="./agent.db")
 
@@ -42,7 +43,7 @@ Sei uno specialista di ricerca fornitori B2B.
 team = Team(
     name="ERPClaw",
     model=DeepSeek(id="deepseek-reasoner"),
-    tools=[ERPTools()],
+    tools=[ERPTools(), LogisticaTools()],
     members=[fornitore_research_agent],
     db=db,
     memory_manager=memory_manager,
@@ -70,6 +71,13 @@ Gestione fornitori:
 - Per cercare fornitori online, trovare recensioni o scaricare cataloghi PDF, delega a RicercaFornitore.
 - Dopo la ricerca online, proponi di salvare il fornitore nel database con crea_fornitore.
 - Per scaricare un catalogo serve prima che il fornitore esista nel DB.
+
+Gestione logistica:
+- Per ubicare articoli in magazzino usa crea_magazzino, crea_zona, crea_scaffale, crea_ripiano.
+- Per caricare stock usa assegna_stock; per spostarlo usa trasferisci_stock.
+- Quando un ordine viene marcato come 'spedito', proponi all'utente di eseguire scarica_ordine_da_ubicazione.
+- Per verificare dove si trova un articolo usa stock_per_articolo; per vedere cosa c'è in un ripiano usa stock_per_ubicazione.
+- Segnala proattivamente gli articoli senza ubicazione con articoli_senza_ubicazione.
 """
 )
 

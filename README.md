@@ -9,16 +9,20 @@ Mini-ERP gestito da un agente AI tramite **Telegram**. Scrivi (o parla) in itali
 L'utente manda un messaggio su Telegram, anche vocale. L'agente AI (DeepSeek via [agno](https://github.com/agno-agi/agno)) interpreta la richiesta ed esegue le operazioni sul database aziendale SQLite.
 
 ```
-Telegram → bot.py → agno Team (DeepSeek) → ERPTools → erp.db
+Telegram → bot.py → agno Team (DeepSeek) → ERPTools        → erp.db
+                                          → LogisticaTools  → erp.db
                                           ↘ FornitoreResearchAgent → web search / PDF
 ```
 
 ## Funzionalità
 
-- **Magazzino** — lista articoli, giacenze, aggiornamenti quantità
+- **Magazzino e ubicazioni** — gerarchia fisica Magazzino→Zona→Scaffale→Ripiano; stock per ubicazione
+- **Movimenti di magazzino** — carico, scarico, trasferimento con storico completo
+- **Integrazione ordini-magazzino** — scarico automatico dalle ubicazioni quando un ordine è spedito (strategia LIFO)
 - **Fornitori** — ricerca web, salvataggio anagrafica, download cataloghi PDF
 - **Importazione cataloghi** — parsing PDF, ricerca prezzi online, inserimento articoli con margine personalizzabile
-- **Clienti** — anagrafica completa
+- **Clienti** — anagrafica con indirizzi multi-tipo (sede legale, spedizione, fatturazione)
+- **Fornitori** — anagrafica con indirizzi multi-tipo
 - **Ordini** — creazione, gestione stati (`bozza → confermato → spedito → chiuso`)
 - **Messaggi vocali** — trascrizione automatica via OpenAI Whisper
 - **Pannello web** — admin CRUD su browser (FastAPI + SQLAdmin)
@@ -116,19 +120,49 @@ erpclaw/
 ├── bot.py                      # bot Telegram (testo + voce)
 ├── web.py                      # pannello admin FastAPI
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
-├── erp_tools.py                # tool ERP dell'agente
+├── erp_tools.py                # tool ERP (articoli, clienti, ordini, fornitori, indirizzi)
+├── logistica_tools.py          # tool logistica (ubicazioni, stock, movimenti)
 ├── fornitore_research_tools.py # tool ricerca fornitori (PDF, web)
 └── config.py                   # caricamento .env
 
+tests/                          # suite pytest (SQLite in-memory)
+docs/plans/                     # design doc e piani implementativi
 esempi di chat/                 # export chat Telegram di esempio
 MANUALE_UTENTE.md               # manuale non tecnico per l'utente finale
 ```
 
-## Aggiungere nuovi tool
+## Database
+
+Tutte le tabelle risiedono in `erp.db` (SQLite):
+
+| Gruppo | Tabelle |
+|--------|---------|
+| Catalogo | `articoli`, `stock_ubicazioni` |
+| Clienti | `clienti`, `indirizzi` |
+| Ordini | `ordini`, `righe_ordine` |
+| Fornitori | `fornitori`, `cataloghi_fornitori` |
+| Magazzino | `magazzini`, `zone`, `scaffali`, `ripiani` |
+| Movimenti | `movimenti_magazzino` |
+
+`Articolo.giacenza` è una `column_property` derivata (somma di `StockUbicazione.quantita`).
+
+## Aggiungere nuovi tool ERP
 
 1. Aggiungi un metodo a `ERPTools` in `erp_tools.py` con docstring in italiano
 2. Registralo con `self.register(self.nome_metodo)` in `__init__`
 3. Il metodo deve restituire una stringa markdown
+
+## Aggiungere nuovi tool logistici
+
+1. Aggiungi un metodo a `LogisticaTools` in `logistica_tools.py` con docstring in italiano
+2. Registralo con `self.register(self.nome_metodo)` in `__init__`
+3. Aggiungi il tool alle istruzioni del team in `agent.py`
+
+## Test
+
+```bash
+uv run pytest tests/ -v
+```
 
 ## Licenza
 

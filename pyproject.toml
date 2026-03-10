@@ -21,6 +21,9 @@ dependencies = [
 [tool.uv]
 package = true
 
+[project.optional-dependencies]
+dev = ["pytest>=9.0"]
+
 [tool.setuptools.packages.find]
 include = ["erpclaw*"]
 

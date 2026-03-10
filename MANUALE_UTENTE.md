@@ -26,13 +26,38 @@ Da quel momento puoi scrivere liberamente in italiano, anche con errori di batti
 
 ### Magazzino e articoli
 
-Controlla le giacenze, aggiungi nuovi articoli, aggiorna le quantità disponibili.
+Controlla le giacenze, aggiungi nuovi articoli e tieni traccia di dove si trovano fisicamente nel magazzino.
 
 **Esempi di richieste:**
 - *"abbiamo articoli in magazzino?"*
 - *"quanti pezzi abbiamo del cibo per gatti Monge?"*
-- *"aggiungi un articolo: codice ART001, Crocchette Premium, prezzo 25 euro, 50 pezzi"*
-- *"aggiorna la giacenza dell'articolo 00121302 a 100 pezzi"*
+- *"aggiungi un articolo: codice ART001, Crocchette Premium, prezzo 25 euro"*
+- *"dove si trova l'articolo ART001 in magazzino?"*
+- *"cosa c'è nel ripiano A-03-2?"*
+- *"ci sono articoli senza ubicazione?"*
+
+---
+
+### Ubicazioni di magazzino
+
+ERPClaw gestisce una struttura fisica a quattro livelli: **Magazzino → Zona → Scaffale → Ripiano**.
+
+Puoi creare la struttura del tuo magazzino e caricare gli articoli nelle ubicazioni corrette.
+
+**Esempi di richieste:**
+- *"crea il magazzino MAG1 chiamato Principale"*
+- *"crea la zona A nel magazzino MAG1"*
+- *"crea lo scaffale A-03 nella zona A"*
+- *"crea il ripiano A-03-2 nello scaffale A-03"*
+- *"mostrami la struttura del magazzino"*
+- *"carica 50 pezzi di ART001 nel ripiano A-03-2"*
+- *"sposta 10 pezzi di ART001 dal ripiano A-03-2 al ripiano B-01-1"*
+- *"mostrami gli ultimi movimenti di magazzino"*
+
+Quando un ordine viene marcato come **spedito**, puoi chiedere lo scarico automatico dalle ubicazioni:
+- *"scarica l'ordine ORD-0042 dal magazzino"*
+
+ERPClaw preleva le quantità partendo dalle ubicazioni con più stock (strategia LIFO) e aggiorna automaticamente le giacenze.
 
 ---
 
@@ -84,10 +109,12 @@ ERPClaw calcola i prezzi con il +20% e inserisce tutti e 10 gli articoli nel cat
 
 ### Clienti
 
-Crea e gestisci la tua anagrafica clienti.
+Crea e gestisci la tua anagrafica clienti, compresi gli indirizzi (sede legale, spedizione, fatturazione).
 
 **Esempi di richieste:**
-- *"aggiungi cliente: Mario Rossi, via Roma 1, Milano"*
+- *"aggiungi cliente: codice C001, Mario Rossi Srl"*
+- *"aggiungi l'indirizzo di spedizione del cliente C001: Via Roma 1, 20100 Milano MI"*
+- *"mostrami gli indirizzi del cliente C001"*
 - *"mostrami la lista clienti"*
 - *"cerca il cliente Bianchi"*
 
@@ -99,10 +126,13 @@ Crea ordini di vendita, aggiorna il loro stato e tieni traccia dello storico.
 
 Gli ordini seguono questo percorso: **Bozza → Confermato → Spedito → Chiuso**
 
+Quando un ordine viene marcato come **spedito**, il sistema può scaricare automaticamente le quantità dalle ubicazioni di magazzino e mostrare l'indirizzo di spedizione del cliente.
+
 **Esempi di richieste:**
 - *"crea un ordine per il cliente Rossi: 2 pezzi di MONGE CAT ADULT POLLO 10KG"*
 - *"conferma l'ordine numero 5"*
-- *"segna l'ordine 5 come spedito"*
+- *"segna l'ordine ORD-0042 come spedito"*
+- *"scarica l'ordine ORD-0042 dal magazzino"*
 - *"mostrami gli ordini aperti"*
 - *"quali ordini ho in bozza?"*
 

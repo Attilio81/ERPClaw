@@ -1,10 +1,11 @@
 """SQLAlchemy models for the ERP database (erp.db)."""
 
-from datetime import date
+from datetime import date, datetime
 from sqlalchemy import (
-    Column, Integer, String, Float, Date, ForeignKey, Enum, Text, create_engine
+    Column, Integer, String, Float, Date, ForeignKey, Enum, Text, create_engine,
+    select, func, UniqueConstraint, DateTime
 )
-from sqlalchemy.orm import DeclarativeBase, relationship, Session
+from sqlalchemy.orm import DeclarativeBase, relationship, Session, column_property
 import enum
 
 DATABASE_URL = "sqlite:///./erp.db"
@@ -22,6 +23,19 @@ class StatoOrdine(str, enum.Enum):
     chiuso = "chiuso"
 
 
+class TipoIndirizzo(str, enum.Enum):
+    sede_legale = "sede_legale"
+    spedizione = "spedizione"
+    fatturazione = "fatturazione"
+    altro = "altro"
+
+
+class TipoMovimento(str, enum.Enum):
+    carico = "carico"
+    scarico = "scarico"
+    trasferimento = "trasferimento"
+
+
 class Articolo(Base):
     __tablename__ = "articoli"
 
@@ -29,9 +43,10 @@ class Articolo(Base):
     codice = Column(String, unique=True, nullable=False)
     descrizione = Column(String, nullable=False)
     prezzo = Column(Float, nullable=False)
-    giacenza = Column(Integer, nullable=False, default=0)
 
     righe = relationship("RigaOrdine", back_populates="articolo")
+    stock_ubicazioni = relationship("StockUbicazione", back_populates="articolo")
+    movimenti = relationship("MovimentoMagazzino", back_populates="articolo")
 
 
 class Cliente(Base):
@@ -44,6 +59,7 @@ class Cliente(Base):
     telefono = Column(String, default="")
 
     ordini = relationship("Ordine", back_populates="cliente")
+    indirizzi = relationship("Indirizzo", back_populates="cliente", cascade="all, delete-orphan")
 
 
 class Ordine(Base):
@@ -57,6 +73,7 @@ class Ordine(Base):
 
     cliente = relationship("Cliente", back_populates="ordini")
     righe = relationship("RigaOrdine", back_populates="ordine", cascade="all, delete-orphan")
+    movimenti = relationship("MovimentoMagazzino", back_populates="ordine")
 
 
 class RigaOrdine(Base):
@@ -84,6 +101,7 @@ class Fornitore(Base):
     settore = Column(String, default="")  # es. "elettronica", "ufficio"
 
     cataloghi = relationship("CatalogoFornitore", back_populates="fornitore", cascade="all, delete-orphan")
+    indirizzi = relationship("Indirizzo", back_populates="fornitore", cascade="all, delete-orphan")
 
 
 class CatalogoFornitore(Base):
@@ -97,6 +115,114 @@ class CatalogoFornitore(Base):
     note = Column(Text, default="")
 
     fornitore = relationship("Fornitore", back_populates="cataloghi")
+
+
+class Indirizzo(Base):
+    __tablename__ = "indirizzi"
+
+    id = Column(Integer, primary_key=True)
+    tipo = Column(Enum(TipoIndirizzo), nullable=False, default=TipoIndirizzo.sede_legale)
+    via = Column(String, nullable=False, default="")
+    cap = Column(String, nullable=False, default="")
+    citta = Column(String, nullable=False, default="")
+    provincia = Column(String, nullable=False, default="")
+    paese = Column(String, nullable=False, default="IT")
+    note = Column(Text, default="")
+    cliente_id = Column(Integer, ForeignKey("clienti.id"), nullable=True)
+    fornitore_id = Column(Integer, ForeignKey("fornitori.id"), nullable=True)
+
+    cliente = relationship("Cliente", back_populates="indirizzi")
+    fornitore = relationship("Fornitore", back_populates="indirizzi")
+
+
+class Magazzino(Base):
+    __tablename__ = "magazzini"
+
+    id = Column(Integer, primary_key=True)
+    codice = Column(String, unique=True, nullable=False)
+    nome = Column(String, nullable=False)
+
+    zone = relationship("Zona", back_populates="magazzino", cascade="all, delete-orphan")
+
+
+class Zona(Base):
+    __tablename__ = "zone"
+
+    id = Column(Integer, primary_key=True)
+    codice = Column(String, unique=True, nullable=False)
+    nome = Column(String, nullable=False)
+    magazzino_id = Column(Integer, ForeignKey("magazzini.id"), nullable=False)
+
+    magazzino = relationship("Magazzino", back_populates="zone")
+    scaffali = relationship("Scaffale", back_populates="zona", cascade="all, delete-orphan")
+
+
+class Scaffale(Base):
+    __tablename__ = "scaffali"
+
+    id = Column(Integer, primary_key=True)
+    codice = Column(String, unique=True, nullable=False)
+    nome = Column(String, nullable=False)
+    zona_id = Column(Integer, ForeignKey("zone.id"), nullable=False)
+
+    zona = relationship("Zona", back_populates="scaffali")
+    ripiani = relationship("Ripiano", back_populates="scaffale", cascade="all, delete-orphan")
+
+
+class Ripiano(Base):
+    __tablename__ = "ripiani"
+
+    id = Column(Integer, primary_key=True)
+    codice = Column(String, unique=True, nullable=False)
+    nome = Column(String, nullable=False)
+    scaffale_id = Column(Integer, ForeignKey("scaffali.id"), nullable=False)
+
+    scaffale = relationship("Scaffale", back_populates="ripiani")
+    stock = relationship("StockUbicazione", back_populates="ripiano", cascade="all, delete-orphan")
+    movimenti_origine = relationship("MovimentoMagazzino", foreign_keys="MovimentoMagazzino.ripiano_origine_id", back_populates="ripiano_origine")
+    movimenti_destinazione = relationship("MovimentoMagazzino", foreign_keys="MovimentoMagazzino.ripiano_destinazione_id", back_populates="ripiano_destinazione")
+
+
+class StockUbicazione(Base):
+    __tablename__ = "stock_ubicazioni"
+
+    id = Column(Integer, primary_key=True)
+    articolo_id = Column(Integer, ForeignKey("articoli.id"), nullable=False)
+    ripiano_id = Column(Integer, ForeignKey("ripiani.id"), nullable=False)
+    quantita = Column(Integer, nullable=False, default=0)
+
+    articolo = relationship("Articolo", back_populates="stock_ubicazioni")
+    ripiano = relationship("Ripiano", back_populates="stock")
+
+    __table_args__ = (UniqueConstraint("articolo_id", "ripiano_id"),)
+
+
+class MovimentoMagazzino(Base):
+    __tablename__ = "movimenti_magazzino"
+
+    id = Column(Integer, primary_key=True)
+    articolo_id = Column(Integer, ForeignKey("articoli.id"), nullable=False)
+    ripiano_origine_id = Column(Integer, ForeignKey("ripiani.id"), nullable=True)
+    ripiano_destinazione_id = Column(Integer, ForeignKey("ripiani.id"), nullable=True)
+    quantita = Column(Integer, nullable=False)
+    tipo = Column(Enum(TipoMovimento), nullable=False)
+    data_ora = Column(DateTime, nullable=False, default=datetime.now)
+    ordine_id = Column(Integer, ForeignKey("ordini.id"), nullable=True)
+    note = Column(Text, default="")
+
+    articolo = relationship("Articolo", back_populates="movimenti")
+    ripiano_origine = relationship("Ripiano", foreign_keys=[ripiano_origine_id], back_populates="movimenti_origine")
+    ripiano_destinazione = relationship("Ripiano", foreign_keys=[ripiano_destinazione_id], back_populates="movimenti_destinazione")
+    ordine = relationship("Ordine", back_populates="movimenti")
+
+
+# giacenza derivata dalla somma degli stock nelle ubicazioni
+Articolo.giacenza = column_property(
+    select(func.coalesce(func.sum(StockUbicazione.quantita), 0))
+    .where(StockUbicazione.articolo_id == Articolo.id)
+    .correlate_except(StockUbicazione)
+    .scalar_subquery()
+)
 
 
 def init_db() -> None:
