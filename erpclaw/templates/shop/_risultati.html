@@ -1,0 +1,29 @@
+{% if articoli %}
+<table class="table table-sm table-hover">
+  <thead><tr><th>Codice</th><th>Descrizione</th><th>Prezzo</th><th>Giacenza</th><th></th></tr></thead>
+  <tbody>
+    {% for a in articoli %}
+    <tr>
+      <td>{{ a.codice }}</td>
+      <td>{{ a.descrizione }}</td>
+      <td>€ {{ "%.2f"|format(a.prezzo) }}</td>
+      <td>{{ a.giacenza }}</td>
+      <td>
+        <form method="post" action="/shop/cart/add"
+              hx-post="/shop/cart/add"
+              hx-target="#carrello"
+              hx-swap="innerHTML">
+          <input type="hidden" name="articolo_id" value="{{ a.id }}">
+          <div class="input-group input-group-sm" style="width:110px">
+            <input type="number" name="qty" value="1" min="1" max="{{ a.giacenza }}" class="form-control">
+            <button class="btn btn-success btn-sm" type="submit">+</button>
+          </div>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">Nessun articolo trovato.</p>
+{% endif %}

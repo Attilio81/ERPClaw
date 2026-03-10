@@ -1,0 +1,30 @@
+{% extends "shop/base.html" %}
+{% block content %}
+<div class="row">
+  <!-- Colonna ricerca articoli -->
+  <div class="col-md-7">
+    <h4>Cerca articoli</h4>
+    <input
+      type="search"
+      name="q"
+      class="form-control mb-3"
+      placeholder="Cerca per codice o descrizione..."
+      hx-get="/shop/search/results"
+      hx-trigger="keyup changed delay:300ms, search"
+      hx-target="#risultati"
+      hx-swap="innerHTML"
+      autofocus
+    >
+    <div id="risultati">
+      <p class="text-muted">Inizia a digitare per cercare articoli.</p>
+    </div>
+  </div>
+  <!-- Colonna carrello -->
+  <div class="col-md-5">
+    <h4>Carrello</h4>
+    <div id="carrello">
+      {% include "shop/_carrello.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "shop/base.html" %}
+{% block content %}
+<h4>I miei ordini</h4>
+{% if ordini %}
+<table class="table">
+  <thead><tr><th>Numero</th><th>Data</th><th>Stato</th><th>Totale</th><th></th></tr></thead>
+  <tbody>
+    {% for o in ordini %}
+    <tr>
+      <td>{{ o.numero }}</td>
+      <td>{{ o.data }}</td>
+      <td><span class="badge bg-secondary">{{ o.stato }}</span></td>
+      <td>€ {{ "%.2f"|format(o.totale) }}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="collapse"
+                data-bs-target="#righe-{{ o.id }}">Dettaglio</button>
+      </td>
+    </tr>
+    <tr class="collapse" id="righe-{{ o.id }}">
+      <td colspan="5">
+        <table class="table table-sm mb-0">
+          {% for r in o.righe %}
+          <tr>
+            <td>{{ r.articolo.codice }}</td>
+            <td>{{ r.articolo.descrizione }}</td>
+            <td>{{ r.quantita }} pz</td>
+            <td>€ {{ "%.2f"|format(r.prezzo_unitario) }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% else %}
+<p class="text-muted">Nessun ordine ancora. <a href="/shop/search">Fai il tuo primo ordine!</a></p>
+{% endif %}
+{% endblock %}

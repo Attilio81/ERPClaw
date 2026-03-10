@@ -1,0 +1,29 @@
+{% if carrello %}
+<table class="table table-sm">
+  <thead><tr><th>Articolo</th><th>Qty</th><th>Prezzo</th><th></th></tr></thead>
+  <tbody>
+    {% for riga in carrello %}
+    <tr>
+      <td>{{ riga.codice }}<br><small class="text-muted">{{ riga.descrizione }}</small></td>
+      <td>{{ riga.qty }}</td>
+      <td>€ {{ "%.2f"|format(riga.prezzo * riga.qty) }}</td>
+      <td>
+        <form hx-post="/shop/cart/remove" hx-target="#carrello" hx-swap="innerHTML">
+          <input type="hidden" name="articolo_id" value="{{ riga.articolo_id }}">
+          <button class="btn btn-danger btn-sm">✕</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr><td colspan="2"><strong>Totale</strong></td>
+        <td colspan="2"><strong>€ {{ "%.2f"|format(totale) }}</strong></td></tr>
+  </tfoot>
+</table>
+<form method="post" action="/shop/checkout">
+  <button class="btn btn-primary w-100">Conferma ordine</button>
+</form>
+{% else %}
+<p class="text-muted">Il carrello è vuoto.</p>
+{% endif %}
