@@ -205,7 +205,7 @@ def search_results(request: Request, q: str = ""):
             # Forza caricamento giacenza prima di chiudere la sessione
             articoli = [
                 {"id": a.id, "codice": a.codice, "descrizione": a.descrizione,
-                 "prezzo": a.prezzo, "giacenza": a.giacenza}
+                 "prezzo": a.prezzo_vendita, "giacenza": a.giacenza}
                 for a in articoli
             ]
     return templates.TemplateResponse(
@@ -227,7 +227,7 @@ def cart_add(request: Request, articolo_id: int = Form(...), qty: int = Form(...
         a = s.get(Articolo, articolo_id)
         if not a:
             return HTMLResponse("Articolo non trovato", status_code=404)
-        codice, descrizione, prezzo = a.codice, a.descrizione, a.prezzo
+        codice, descrizione, prezzo = a.codice, a.descrizione, a.prezzo_vendita
 
     # Aggiorna qty se già presente, altrimenti aggiungi
     for riga in carrello:
