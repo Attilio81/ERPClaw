@@ -1,0 +1,15 @@
+{% for msg in history %}
+  {% if msg.role == "user" %}
+  <div class="d-flex justify-content-end mb-2">
+    <div class="bg-primary text-white rounded px-3 py-2" style="max-width:75%">
+      {{ msg.content }}
+    </div>
+  </div>
+  {% else %}
+  <div class="d-flex justify-content-start mb-2">
+    <div class="bg-light border rounded px-3 py-2 chat-md" style="max-width:90%">
+      {{ msg.content | safe }}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
