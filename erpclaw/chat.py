@@ -48,10 +48,7 @@ def _add_message(session_id: str, role: str, content: str) -> None:
 async def chat_page(request: Request):
     sid = _get_or_create_session_id(request.cookies.get(COOKIE_NAME))
     history = _get_history(sid)
-    resp = templates.TemplateResponse(
-        "chat/chat.html",
-        {"request": request, "history": history},
-    )
+    resp = templates.TemplateResponse(request, "chat/chat.html", {"history": history})
     resp.set_cookie(COOKIE_NAME, sid, httponly=True, samesite="lax")
     return resp
 
@@ -74,9 +71,6 @@ async def chat_send(request: Request, message: str = Form(...)):
         _add_message(sid, "assistant", f"<p class='text-danger'>Errore: {html.escape(str(e))}</p>")
 
     history = _get_history(sid)
-    resp = templates.TemplateResponse(
-        "chat/_messaggi.html",
-        {"request": request, "history": history},
-    )
+    resp = templates.TemplateResponse(request, "chat/_messaggi.html", {"history": history})
     resp.set_cookie(COOKIE_NAME, sid, httponly=True, samesite="lax")
     return resp
