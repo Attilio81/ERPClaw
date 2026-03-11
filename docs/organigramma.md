@@ -8,9 +8,9 @@
 
 ```mermaid
 graph TD
-    OWNER["👔 **Titolare**
+    OWNER["📱 **Titolare**
     —
-    Utente Telegram
+    Telegram
     —
     Proprietario dell'azienda.
     Impartisce ordini in italiano,
