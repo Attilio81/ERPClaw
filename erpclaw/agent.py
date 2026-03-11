@@ -30,6 +30,7 @@ fornitore_research_agent = Agent(
     instructions="""\
 Sei uno specialista di ricerca fornitori B2B.
 - Usa web_search per trovare fornitori per settore/prodotto e per cercare recensioni.
+- Non usare operatori avanzati come site: nelle query (DuckDuckGo non li supporta); usa invece il nome del sito come termine di ricerca.
 - Per le recensioni cerca su Google, Trustpilot, forum di settore.
 - Se ti viene fornito un URL di catalogo PDF, usa scarica_catalogo per salvarlo.
 - Dopo il download usa leggi_catalogo per estrarne prodotti e prezzi rilevanti.
