@@ -1,5 +1,6 @@
 """Web chat interface for ERPClaw — accessible at /chat."""
 
+import html
 import uuid
 from typing import Any
 
@@ -62,6 +63,7 @@ async def chat_send(request: Request, message: str = Form(...)):
     _add_message(sid, "user", message)
 
     try:
+        # user_id condiviso con il bot Telegram: memoria agente unificata per il titolare
         raw_response = await run_agent(message, user_id=ALLOWED_CHAT_ID)
         html_response = markdown2.markdown(
             raw_response or "(risposta vuota)",
@@ -69,7 +71,7 @@ async def chat_send(request: Request, message: str = Form(...)):
         )
         _add_message(sid, "assistant", html_response)
     except Exception as e:
-        _add_message(sid, "assistant", f"<p class='text-danger'>Errore: {e}</p>")
+        _add_message(sid, "assistant", f"<p class='text-danger'>Errore: {html.escape(str(e))}</p>")
 
     history = _get_history(sid)
     resp = templates.TemplateResponse(

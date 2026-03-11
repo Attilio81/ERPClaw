@@ -1,12 +1,23 @@
 """Tests for web chat session management helpers."""
 import uuid
+
+import pytest
+
 from erpclaw.chat import _get_or_create_session_id, _get_history, _add_message, chat_sessions
+
+
+@pytest.fixture(autouse=True)
+def clear_sessions():
+    chat_sessions.clear()
+    yield
+    chat_sessions.clear()
 
 
 def test_get_or_create_session_id_generates_uuid():
     """Se non c'è cookie, genera un UUID valido."""
     sid = _get_or_create_session_id(None)
-    uuid.UUID(sid)  # lancia ValueError se non è UUID valido
+    parsed = uuid.UUID(sid)  # lancia ValueError se non è UUID valido
+    assert str(parsed) == sid  # conferma formato canonico
 
 
 def test_get_or_create_session_id_preserves_existing():
@@ -38,3 +49,9 @@ def test_add_message_multiple_sessions_isolated():
     sid2 = str(uuid.uuid4())
     _add_message(sid1, "user", "messaggio sid1")
     assert _get_history(sid2) == []
+
+
+def test_get_or_create_session_id_treats_empty_string_as_missing():
+    """Cookie vuoto genera un nuovo UUID (falsy in Python)."""
+    sid = _get_or_create_session_id("")
+    uuid.UUID(sid)  # deve essere un UUID valido
