@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ERPClaw** is a mini-ERP managed by an AI agent via Telegram. Users interact through natural language (text or voice). The AI agent (DeepSeek via the `agno` framework) translates requests into ERP operations on a SQLite database.
+**ERPClaw** is a mini-ERP managed by an AI agent via Telegram. Users interact through natural language (text or voice). The AI agent (configurable: LM Studio local model or DeepSeek cloud, via the `agno` framework) translates requests into ERP operations on a SQLite database.
 
 ## Commands
 
@@ -24,6 +24,7 @@ uv run uvicorn erpclaw.web:app --reload
 ```
 
 `start.bat` launches both processes (web+shop in a separate window, then the bot).
+`reset_db.bat` deletes and regenerates `erp.db` and `agent.db` (asks for confirmation).
 
 **uv sync gotcha:** If the bot is running, `erpclaw.exe` is locked and `uv sync` fails. Install packages directly with `uv pip install <pkg>` instead. Run tests with `uv run --no-sync python -m pytest`.
 
@@ -31,9 +32,13 @@ uv run uvicorn erpclaw.web:app --reload
 
 A `.env` file is required:
 - `TELEGRAM_BOT_TOKEN` — Telegram bot token
-- `DEEPSEEK_API_KEY` — DeepSeek API key (agent LLM)
+- `ALLOWED_CHAT_ID` — Telegram numeric user ID allowed to use the bot
 - `OPENAI_API_KEY` — OpenAI API key (Whisper voice transcription only)
 - `SHOP_SECRET_KEY` — Secret for shop session cookies (optional; defaults to dev value)
+- `LLM_PROVIDER` — `lmstudio` (default) or `deepseek`
+- `LLM_MODEL_ID` — Model ID (default: `qwen/qwen3.5-9b` for LM Studio, `deepseek-reasoner` for DeepSeek)
+- `LMSTUDIO_BASE_URL` — LM Studio server URL (default: `http://localhost:1234/v1`)
+- `DEEPSEEK_API_KEY` — DeepSeek API key (only required if `LLM_PROVIDER=deepseek`)
 
 ## Architecture
 
@@ -70,7 +75,7 @@ Two independent databases, two entry points:
 
 ### Data Flow
 ```
-Telegram message → bot.py → agent.py (agno Team + deepseek-reasoner)
+Telegram message → bot.py → agent.py (agno Team + LM Studio or DeepSeek)
   → ERPTools (erp_tools.py)        → SQLAlchemy session → erp.db
   → LogisticaTools (logistica_tools.py) → SQLAlchemy session → erp.db
   → delegates to fornitore_research_agent → FornitoreResearchTools / DuckDuckGoTools
@@ -78,18 +83,27 @@ Telegram message → bot.py → agent.py (agno Team + deepseek-reasoner)
 
 The `team` object (agno `Team`) is the main entry point. It holds `ERPTools` + `LogisticaTools` and delegates to `fornitore_research_agent` for supplier web research.
 
+### Model Configuration
+
+`_make_model(thinking=True/False)` in `agent.py` builds the model based on `LLM_PROVIDER`:
+- `lmstudio` → `LMStudio(id, base_url, extra_body={"enable_thinking": ...})`
+- `deepseek` → `DeepSeek(id, api_key)`
+
+Thinking mode is enabled for all three components (team, fornitore_research_agent, memory_manager) by default. `_strip_reasoning()` strips `<reasoning>...</reasoning>` tags from responses (Qwen3.5 thinking output) before sending to Telegram.
+
 ### agno SDK Version
 Always use the latest version of `agno`. The agno API changes frequently — when upgrading, verify that `Agent` and `Team` constructor parameters are still valid. The current architecture uses `Team` (not `Agent`) as the top-level entry point because `Agent` no longer accepts a `team` parameter (removed in agno ≥2.5.x in favor of the dedicated `Team` class).
 
 ### Key Files
-- `erpclaw/config.py` — Loads `.env`; fails fast if variables are missing. Exports `SHOP_SECRET_KEY` with dev default.
-- `erpclaw/erp_db.py` — SQLAlchemy models and `get_session()` / `init_db()`. `init_db()` is called at import time in both `erp_tools.py`, `logistica_tools.py`, and `web.py`. Also runs `_migrate()` to add missing columns to existing DBs (idempotent).
-- `erpclaw/erp_tools.py` — `ERPTools(Toolkit)`: tools for articles (dual pricing: `prezzo_vendita`/`prezzo_acquisto`), clients, customer orders, supplier orders (`crea_ordine_fornitore`, `aggiungi_riga_ordine_fornitore`, `lista_ordini_fornitori`, `visualizza_ordine_fornitore`, `avanza_stato_ordine_fornitore`), categories, and addresses. Tools return markdown strings.
+- `erpclaw/config.py` — Loads `.env`; fails fast if required variables are missing. Exports `LLM_PROVIDER`, `LLM_MODEL_ID`, `LMSTUDIO_BASE_URL`, `SHOP_SECRET_KEY` (with dev default), `DEEPSEEK_API_KEY` (optional).
+- `erpclaw/erp_db.py` — SQLAlchemy models and `get_session()` / `init_db()`. `init_db()` is called at import time in both `erp_tools.py`, `logistica_tools.py`, and `web.py`. Uses `create_all(checkfirst=True)` to avoid errors on existing DBs. Also runs `_migrate()` to add missing columns to existing DBs (idempotent).
+- `erpclaw/erp_tools.py` — `ERPTools(Toolkit)`: tools for articles (dual pricing: `prezzo_vendita`/`prezzo_acquisto`), clients, customer orders, supplier orders (`crea_ordine_fornitore`, `aggiungi_riga_ordine_fornitore`, `lista_ordini_fornitori`, `visualizza_ordine_fornitore`, `avanza_stato_ordine_fornitore`), categories, and addresses. `cap` parameter accepts `Union[str, int]` (local models tend to pass CAP as integer).
 - `erpclaw/logistica_tools.py` — `LogisticaTools(Toolkit)`: tools for warehouse locations (Magazzino→Zona→Scaffale→Ripiano), stock assignment/transfer, order discharge, and movement history.
 - `erpclaw/fornitore_research_tools.py` — `FornitoreResearchTools(Toolkit)`: PDF catalog download (httpx), parsing (pdfplumber), DB management.
-- `erpclaw/agent.py` — `team` (agno `Team`) + `fornitore_research_agent` sub-agent + `memory_manager`. The `Team` is the entry point; it holds `ERPTools` + `LogisticaTools`, `db`, memory, and delegates to `fornitore_research_agent`. Memory manager uses `deepseek-chat`; both team leader and sub-agent use `deepseek-reasoner`.
+- `erpclaw/agent.py` — `team` (agno `Team`) + `fornitore_research_agent` sub-agent + `memory_manager`. The `Team` is the entry point; it holds `ERPTools` + `LogisticaTools`, `db`, memory, and delegates to `fornitore_research_agent`. All components use `_make_model(thinking=True)`. `_strip_reasoning()` cleans Qwen3.5 thinking tags from responses.
 - `erpclaw/shop.py` — FastAPI `APIRouter(prefix="/shop")`: register/login/logout, article search (HTMX), cart (cookie JSON), checkout, order history. Auth via `itsdangerous` + `passlib[bcrypt]`.
 - `erpclaw/templates/shop/` — Jinja2 templates: `base.html`, `register.html`, `login.html`, `search.html`, `orders.html`, `_risultati.html` (HTMX partial), `_carrello.html` (HTMX partial).
+- `docs/lmstudio-settings.md` — LM Studio recommended settings for ERPClaw (GGUF variant, GPU offload, inference params).
 
 ### Agent Memory
 - `enable_agentic_memory=True` + `add_history_to_context=True` (last 5 runs) per user.
@@ -110,6 +124,7 @@ When an order is marked `spedito`, the agent should propose running `scarica_ord
 2. Register it with `self.register(self.method_name)` in `ERPTools.__init__`.
 3. Methods must return `str` (markdown-formatted for Telegram display).
 4. Use `get_session()` as a context manager (`with get_session() as s:`).
+5. For parameters that could be passed as int by local models (e.g. CAP codes), use `Union[str, int]`.
 
 ## Adding New Logistics Tools
 

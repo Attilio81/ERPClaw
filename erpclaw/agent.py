@@ -1,18 +1,32 @@
 from agno.agent import Agent
 from agno.db.sqlite import AsyncSqliteDb
 from agno.memory.manager import MemoryManager
-from agno.models.deepseek import DeepSeek
 from agno.team import Team
 from agno.tools.duckduckgo import DuckDuckGoTools
 
+from erpclaw.config import DEEPSEEK_API_KEY, LLM_MODEL_ID, LLM_PROVIDER, LMSTUDIO_BASE_URL
 from erpclaw.erp_tools import ERPTools
 from erpclaw.fornitore_research_tools import FornitoreResearchTools
 from erpclaw.logistica_tools import LogisticaTools
 
+
+def _make_model(thinking: bool = False):
+    if LLM_PROVIDER == "deepseek":
+        from agno.models.deepseek import DeepSeek
+        return DeepSeek(id=LLM_MODEL_ID, api_key=DEEPSEEK_API_KEY)
+    else:
+        from agno.models.lmstudio import LMStudio
+        return LMStudio(
+            id=LLM_MODEL_ID,
+            base_url=LMSTUDIO_BASE_URL,
+            extra_body={"enable_thinking": thinking},
+        )
+
+
 db = AsyncSqliteDb(db_file="./agent.db")
 
 memory_manager = MemoryManager(
-    model=DeepSeek(id="deepseek-chat"),   # chat per il memory manager (più veloce)
+    model=_make_model(),
     db=db,
     memory_capture_instructions="""\
         Raccogli il nome dell'utente,
@@ -25,7 +39,7 @@ memory_manager = MemoryManager(
 fornitore_research_agent = Agent(
     name="RicercaFornitore",
     role="Specialista in ricerca fornitori online, recensioni e analisi cataloghi",
-    model=DeepSeek(id="deepseek-reasoner"),
+    model=_make_model(thinking=True),
     tools=[DuckDuckGoTools(), FornitoreResearchTools()],
     instructions="""\
 Sei uno specialista di ricerca fornitori B2B.
@@ -43,7 +57,7 @@ Sei uno specialista di ricerca fornitori B2B.
 # Team ERP: agente principale con delega al ricercatore fornitori
 team = Team(
     name="ERPClaw",
-    model=DeepSeek(id="deepseek-reasoner"),
+    model=_make_model(thinking=True),
     tools=[ERPTools(), LogisticaTools()],
     members=[fornitore_research_agent],
     db=db,
@@ -83,7 +97,15 @@ Gestione logistica:
 )
 
 
+import re as _re
+
+
+def _strip_reasoning(text: str) -> str:
+    """Rimuove i tag <reasoning>...</reasoning> che Qwen3.5 inserisce nel testo."""
+    return _re.sub(r"<reasoning>.*?</reasoning>", "", text, flags=_re.DOTALL).strip()
+
+
 async def run_agent(user_message: str, user_id: str = "default_user") -> str:
     """Process a user message through the AI agent and return the response."""
     response = await team.arun(user_message, user_id=user_id)
-    return response.content
+    return _strip_reasoning(response.content)

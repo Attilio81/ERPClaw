@@ -230,6 +230,8 @@ Quando un ordine viene marcato come **spedito**, il sistema può scaricare autom
 
 Esiste anche un pannello di amministrazione accessibile da browser all'indirizzo **http://localhost:8000/admin** per chi preferisce una vista tabellare dei dati (articoli, clienti, ordini, fornitori). Si può usare in parallelo con Telegram, senza interferenze.
 
+> **Nota per l'amministratore:** per azzerare e rigenerare il database (ad esempio in fase di test o setup iniziale) è disponibile il file `reset_db.bat`. Chiede conferma prima di procedere e cancella tutti i dati.
+
 ---
 
 ## Portale ordini clienti (Shop)

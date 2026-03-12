@@ -312,7 +312,7 @@ Articolo.giacenza = column_property(
 
 def init_db() -> None:
     """Create all tables if they don't exist, and migrate missing columns."""
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine, checkfirst=True)
     _migrate(engine)
 
 

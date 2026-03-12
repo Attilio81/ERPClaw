@@ -6,12 +6,12 @@ Mini-ERP gestito da un agente AI tramite **Telegram**. Scrivi (o parla) in itali
 
 ## Come funziona
 
-L'utente manda un messaggio su Telegram, anche vocale. L'agente AI (DeepSeek via [agno](https://github.com/agno-agi/agno)) interpreta la richiesta ed esegue le operazioni sul database aziendale SQLite.
+L'utente manda un messaggio su Telegram, anche vocale. L'agente AI (LM Studio in locale o DeepSeek cloud, via [agno](https://github.com/agno-agi/agno)) interpreta la richiesta ed esegue le operazioni sul database aziendale SQLite.
 
 ```
-Telegram → bot.py → agno Team (DeepSeek) → ERPTools        → erp.db
-                                          → LogisticaTools  → erp.db
-                                          ↘ FornitoreResearchAgent → web search / PDF
+Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        → erp.db
+                                                       → LogisticaTools  → erp.db
+                                                       ↘ FornitoreResearchAgent → web search / PDF
 ```
 
 ## Funzionalità
@@ -37,7 +37,8 @@ Telegram → bot.py → agno Team (DeepSeek) → ERPTools        → erp.db
 
 | Componente | Tecnologia |
 |---|---|
-| LLM agente | DeepSeek (`deepseek-reasoner`) |
+| LLM agente | LM Studio (locale) o DeepSeek cloud — configurabile via `.env` |
+| Modello consigliato | Qwen3.5-9B (LM Studio) |
 | Framework agente | [agno](https://github.com/agno-agi/agno) |
 | Trascrizione voce | OpenAI Whisper |
 | Database ERP | SQLite + SQLAlchemy |
@@ -51,8 +52,8 @@ Telegram → bot.py → agno Team (DeepSeek) → ERPTools        → erp.db
 - Python 3.13
 - [uv](https://github.com/astral-sh/uv)
 - Token bot Telegram
-- API key DeepSeek
 - API key OpenAI (solo per i messaggi vocali)
+- **LM Studio** (locale, consigliato) oppure API key DeepSeek (cloud)
 
 ## Installazione
 
@@ -70,9 +71,20 @@ uv sync
 File `.env` richiesto:
 ```
 TELEGRAM_BOT_TOKEN=...
-DEEPSEEK_API_KEY=...
-OPENAI_API_KEY=...
-SHOP_SECRET_KEY=...   # opzionale, default dev value
+ALLOWED_CHAT_ID=...          # tuo Telegram numeric user ID
+OPENAI_API_KEY=...           # solo per messaggi vocali
+
+# Modello locale (default):
+LLM_PROVIDER=lmstudio
+LLM_MODEL_ID=qwen/qwen3.5-9b
+LMSTUDIO_BASE_URL=http://localhost:1234/v1
+
+# Oppure DeepSeek cloud:
+# LLM_PROVIDER=deepseek
+# LLM_MODEL_ID=deepseek-reasoner
+# DEEPSEEK_API_KEY=...
+
+SHOP_SECRET_KEY=...          # opzionale, default dev value
 ```
 
 ## Avvio
@@ -88,7 +100,12 @@ uv run uvicorn erpclaw.web:app --reload
 
 # Avvia entrambi (Windows)
 start.bat
+
+# Azzera e rigenera i database
+reset_db.bat
 ```
+
+> **LM Studio:** avvia il server locale prima di lanciare il bot. Vedi `docs/lmstudio-settings.md` per le impostazioni consigliate.
 
 ## Esempi d'uso
 
@@ -172,15 +189,18 @@ erpclaw/
 ├── web.py                      # pannello admin FastAPI + shop router
 ├── shop.py                     # portale ordini clienti (/shop)
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
-├── erp_tools.py                # tool ERP (articoli con prezzo duale, categorie, scorta_minima, clienti, ordini clienti/fornitori, indirizzi)
+├── erp_tools.py                # tool ERP (articoli, categorie, clienti, ordini, indirizzi)
 ├── logistica_tools.py          # tool logistica (ubicazioni, stock, movimenti)
 ├── fornitore_research_tools.py # tool ricerca fornitori (PDF, web)
-├── config.py                   # caricamento .env
+├── config.py                   # caricamento .env (LLM_PROVIDER, LLM_MODEL_ID, ecc.)
 └── templates/shop/             # template Jinja2 per il portale shop
 
 tests/                          # suite pytest (SQLite in-memory)
-docs/plans/                     # design doc e piani implementativi
+docs/
+├── lmstudio-settings.md        # impostazioni consigliate LM Studio
+└── plans/                      # design doc e piani implementativi
 esempi di chat/                 # export chat Telegram di esempio
+reset_db.bat                    # azzera e rigenera i database
 MANUALE_UTENTE.md               # manuale non tecnico per l'utente finale
 ```
 
@@ -205,6 +225,7 @@ Tutte le tabelle risiedono in `erp.db` (SQLite):
 1. Aggiungi un metodo a `ERPTools` in `erp_tools.py` con docstring in italiano
 2. Registralo con `self.register(self.nome_metodo)` in `__init__`
 3. Il metodo deve restituire una stringa markdown
+4. Per parametri numerici che il modello potrebbe passare come int (es. CAP), usa `Union[str, int]`
 
 ## Aggiungere nuovi tool logistici
 

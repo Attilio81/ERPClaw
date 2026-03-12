@@ -1,5 +1,7 @@
 """Agno Toolkit with all ERP tools for articles, customers and orders."""
 
+from typing import Union
+
 from agno.tools import Toolkit
 from sqlalchemy import or_, func
 
@@ -147,7 +149,7 @@ class ERPTools(Toolkit):
         return f"| Codice | Ragione Sociale | Email | Telefono |\n|--------|-----------------|-------|----------|\n{rows}"
 
     def aggiungi_indirizzo_cliente(self, codice_cliente: str, tipo: str, via: str,
-                                   cap: str, citta: str, provincia: str,
+                                   cap: Union[str, int], citta: str, provincia: str,
                                    paese: str = "IT", note: str = "") -> str:
         """Aggiunge un indirizzo (sede_legale/spedizione/fatturazione/altro) a un cliente."""
         with get_session() as s:
@@ -425,7 +427,7 @@ class ERPTools(Toolkit):
         return f"Fornitore **{codice}** aggiornato ✓"
 
     def aggiungi_indirizzo_fornitore(self, codice_fornitore: str, tipo: str, via: str,
-                                     cap: str, citta: str, provincia: str,
+                                     cap: Union[str, int], citta: str, provincia: str,
                                      paese: str = "IT", note: str = "") -> str:
         """Aggiunge un indirizzo (sede_legale/spedizione/fatturazione/altro) a un fornitore."""
         with get_session() as s:
