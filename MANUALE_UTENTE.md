@@ -10,6 +10,8 @@ ERPClaw è un gestionale aziendale (ERP) che si usa tramite **Telegram**. Non ci
 
 Puoi anche **mandare messaggi vocali**: ERPClaw li trascrive e risponde come se avessi scritto.
 
+L'intelligenza artificiale che elabora le tue richieste può girare **in locale sul tuo computer** (nessun dato inviato a server esterni) oppure su cloud. Nella configurazione predefinita viene usato un modello locale tramite LM Studio — tutto rimane sulla tua macchina, eccetto la trascrizione vocale che usa il servizio OpenAI Whisper.
+
 ---
 
 ## Come iniziare
