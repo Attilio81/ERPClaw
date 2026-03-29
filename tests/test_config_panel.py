@@ -166,3 +166,17 @@ def test_api_put_ignores_unknown_keys(tmp_path, monkeypatch):
     r = c.put("/config/api", json={"UNKNOWN_KEY": "hack", "LLM_PROVIDER": "deepseek"})
     assert r.status_code == 200
     assert "UNKNOWN_KEY" not in env.read_text()
+
+
+def test_api_put_null_value_writes_empty_string(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("TELEGRAM_BOT_TOKEN=existing\n")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    app = FastAPI()
+    app.include_router(router)
+    c = TestClient(app)
+    r = c.put("/config/api", json={"TELEGRAM_BOT_TOKEN": None})
+    assert r.status_code == 200
+    content = env.read_text()
+    assert "TELEGRAM_BOT_TOKEN=None" not in content
+    assert "TELEGRAM_BOT_TOKEN=" in content
