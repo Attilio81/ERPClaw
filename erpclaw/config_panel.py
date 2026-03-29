@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 ENV_PATH = Path(".env")
@@ -83,3 +83,18 @@ async def config_post(request: Request):
     updates = {k: str(form.get(k, "")) for k in ENV_KEYS}
     write_env(ENV_PATH, updates)
     return RedirectResponse(url="/config/?saved=true", status_code=303)
+
+
+@router.get("/api")
+async def config_api_get():
+    values = parse_env(ENV_PATH)
+    return JSONResponse({k: values.get(k, "") for k in ENV_KEYS})
+
+
+@router.put("/api")
+async def config_api_put(request: Request):
+    updates = await request.json()
+    safe = {k: str(v) for k, v in updates.items() if k in ENV_KEYS}
+    write_env(ENV_PATH, safe)
+    values = parse_env(ENV_PATH)
+    return JSONResponse({k: values.get(k, "") for k in ENV_KEYS})
