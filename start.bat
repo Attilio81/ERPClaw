@@ -20,13 +20,22 @@ if errorlevel 1 (
     echo AVVISO: uv sync fallito. Le dipendenze esistenti verranno usate.
 )
 
+:: Avvia frontend React in dev (installa npm se necessario)
+if exist "frontend\package.json" (
+    if not exist "frontend\node_modules\" (
+        echo Installazione dipendenze frontend...
+        cd /d "%~dp0frontend"
+        npm install
+        cd /d "%~dp0"
+    )
+    echo Avvio frontend React...
+    start "ERPClaw Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
+)
+
 echo.
-echo   Home:      http://localhost:8000/
+echo   React SPA: http://localhost:5173/         (Home, Dashboard, Config, Chat)
 echo   Admin:     http://localhost:8000/admin
 echo   Shop:      http://localhost:8000/shop/register
-echo   Chat:      http://localhost:8000/chat
-echo   Dashboard: http://localhost:8000/agents/
-echo   Config:    http://localhost:8000/config/
 echo.
 
 echo Avvio pannello web...

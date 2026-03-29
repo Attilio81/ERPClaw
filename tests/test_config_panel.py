@@ -124,3 +124,59 @@ def test_post_config_writes_env(client, tmp_path, monkeypatch):
     result = parse_env(env)
     assert result["LLM_PROVIDER"] == "deepseek"
     assert result["DEEPSEEK_API_KEY"] == "sk-test"
+
+
+# ── JSON API endpoints ────────────────────────────────────────────────────────
+
+def test_api_get_returns_all_keys(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("LLM_PROVIDER=deepseek\nTELEGRAM_BOT_TOKEN=tok123\n")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    app = FastAPI()
+    app.include_router(router)
+    c = TestClient(app)
+    r = c.get("/config/api")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["LLM_PROVIDER"] == "deepseek"
+    assert data["TELEGRAM_BOT_TOKEN"] == "tok123"
+    assert data["ALLOWED_CHAT_ID"] == ""   # not in file → empty string
+
+
+def test_api_put_updates_env(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("LLM_PROVIDER=lmstudio\n")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    app = FastAPI()
+    app.include_router(router)
+    c = TestClient(app)
+    r = c.put("/config/api", json={"LLM_PROVIDER": "deepseek"})
+    assert r.status_code == 200
+    assert r.json()["LLM_PROVIDER"] == "deepseek"
+    assert "LLM_PROVIDER=deepseek" in env.read_text()
+
+
+def test_api_put_ignores_unknown_keys(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    app = FastAPI()
+    app.include_router(router)
+    c = TestClient(app)
+    r = c.put("/config/api", json={"UNKNOWN_KEY": "hack", "LLM_PROVIDER": "deepseek"})
+    assert r.status_code == 200
+    assert "UNKNOWN_KEY" not in env.read_text()
+
+
+def test_api_put_null_value_writes_empty_string(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("TELEGRAM_BOT_TOKEN=existing\n")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    app = FastAPI()
+    app.include_router(router)
+    c = TestClient(app)
+    r = c.put("/config/api", json={"TELEGRAM_BOT_TOKEN": None})
+    assert r.status_code == 200
+    content = env.read_text()
+    assert "TELEGRAM_BOT_TOKEN=None" not in content
+    assert "TELEGRAM_BOT_TOKEN=" in content

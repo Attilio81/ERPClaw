@@ -1,10 +1,11 @@
-"""Pannello di configurazione .env — GET /config, POST /config"""
+"""Pannello di configurazione .env — GET/POST /config (HTML) · GET/PUT /config/api (JSON)"""
 
 from pathlib import Path
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 ENV_PATH = Path(".env")
 
@@ -65,6 +66,11 @@ def write_env(path: Path, updates: dict[str, str]) -> None:
     path.write_text("".join(new_lines), encoding="utf-8")
 
 
+class _ConfigUpdate(BaseModel):
+    """Modello Pydantic per gli aggiornamenti di configurazione via API."""
+    model_config = {"extra": "allow"}
+
+
 router = APIRouter(prefix="/config")
 templates = Jinja2Templates(directory="erpclaw/templates")
 
@@ -83,3 +89,18 @@ async def config_post(request: Request):
     updates = {k: str(form.get(k, "")) for k in ENV_KEYS}
     write_env(ENV_PATH, updates)
     return RedirectResponse(url="/config/?saved=true", status_code=303)
+
+
+@router.get("/api")
+async def config_api_get():
+    values = parse_env(ENV_PATH)
+    return JSONResponse({k: values.get(k, "") for k in ENV_KEYS})
+
+
+@router.put("/api")
+async def config_api_put(body: _ConfigUpdate):
+    updates = body.model_dump()
+    safe = {k: ("" if v is None else str(v)) for k, v in updates.items() if k in ENV_KEYS}
+    write_env(ENV_PATH, safe)
+    values = parse_env(ENV_PATH)
+    return JSONResponse({k: values.get(k, "") for k in ENV_KEYS})

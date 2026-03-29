@@ -6,7 +6,7 @@ from typing import Any
 
 import markdown2
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from erpclaw.agent import run_agent
@@ -72,5 +72,40 @@ async def chat_send(request: Request, message: str = Form(...)):
 
     history = _get_history(sid)
     resp = templates.TemplateResponse(request, "chat/_messaggi.html", {"history": history})
+    resp.set_cookie(COOKIE_NAME, sid, httponly=True, samesite="lax")
+    return resp
+
+
+@router.get("/api/history")
+async def chat_api_history(request: Request):
+    sid = _get_or_create_session_id(request.cookies.get(COOKIE_NAME))
+    history = _get_history(sid)
+    resp = JSONResponse(history)
+    resp.set_cookie(COOKIE_NAME, sid, httponly=True, samesite="lax")
+    return resp
+
+
+@router.post("/api/send")
+async def chat_api_send(request: Request):
+    data = await request.json()
+    message = (data.get("message") or "").strip()
+    if not message:
+        return JSONResponse({"error": "Empty message"}, status_code=400)
+
+    sid = _get_or_create_session_id(request.cookies.get(COOKIE_NAME))
+    _add_message(sid, "user", message)
+
+    try:
+        raw = await run_agent(message, user_id=ALLOWED_CHAT_ID)
+        content = markdown2.markdown(
+            raw or "(risposta vuota)",
+            extras=["tables", "fenced-code-blocks", "strike"],
+        )
+        _add_message(sid, "assistant", content)
+    except Exception as e:
+        content = f"<p>Errore: {html.escape(str(e))}</p>"
+        _add_message(sid, "assistant", content)
+
+    resp = JSONResponse({"role": "assistant", "content": content})
     resp.set_cookie(COOKIE_NAME, sid, httponly=True, samesite="lax")
     return resp

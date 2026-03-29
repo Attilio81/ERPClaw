@@ -69,9 +69,43 @@ Two independent databases, two entry points:
 
 ### Entry Points
 1. **Telegram Bot** (`erpclaw/bot.py`): Handles text and voice. Voice → Whisper transcription → agent. The `user_id` passed to the agent is the Telegram numeric user ID (as string).
-2. **Web Admin + Shop** (`erpclaw/web.py`): FastAPI app with two sub-systems:
+2. **Web Admin + Shop** (`erpclaw/web.py`): FastAPI app with:
    - SQLAdmin CRUD at `/admin` for all ERP/logistics models.
    - Customer shop portal at `/shop` (register, login, search articles, cart, checkout, order history).
+   - JSON API endpoints for the React SPA (`/agents/api/*`, `/config/api`, `/chat/api/*`).
+   - SPA catch-all: serves `frontend/dist/index.html` for all non-API routes (production).
+3. **React SPA** (`frontend/`): Vite 6 + React 19 + TypeScript 5 + Tailwind CSS v4 + shadcn/ui + @xyflow/react. Four pages: Home, AgentDashboard, ConfigPanel, Chat. In dev, Vite proxies API calls to FastAPI :8000. In production, `npm run build` writes to `frontend/dist/` which FastAPI serves.
+
+### React Frontend
+
+**Stack:** Vite 6, React 19, TypeScript 5, Tailwind CSS v4 (`@tailwindcss/vite` plugin, CSS-first config — no `tailwind.config.js`), shadcn/ui (Default style, Slate, CSS variables), React Router v7, @xyflow/react, lucide-react, sonner.
+
+**Dev workflow:**
+```bash
+cd frontend && npm run dev   # → http://localhost:5173
+```
+Vite proxies `/agents`, `/config`, `/chat`, `/admin`, `/shop` → `http://localhost:8000`.
+
+**Production:**
+```bash
+cd frontend && npm run build   # → frontend/dist/
+```
+FastAPI serves `frontend/dist/assets/` at `/assets` and catches all other routes with `spa_fallback` returning `frontend/dist/index.html`.
+
+**Key frontend files:**
+- `frontend/src/lib/types.ts` — `AgentConfig`, `EnvConfig`, `ChatMessage` interfaces
+- `frontend/src/lib/api.ts` — typed fetch wrappers: `agentApi`, `configApi`, `chatApi`
+- `frontend/src/pages/AgentDashboard.tsx` — xyflow canvas with `NODE_TYPES` at module level, save/reload toolbar, `NodeEditSheet`
+- `frontend/src/components/agents/flowUtils.ts` — `configToFlow(config)` and `extractPositions(nodes)`
+- `frontend/src/components/agents/NodeEditSheet.tsx` — shadcn Sheet editor for team/agent/tool/memory nodes using `structuredClone` + path-based setter
+- `frontend/vite.config.ts` — proxy config + `@` alias to `./src`
+
+**JSON API endpoints added:**
+- `GET /agents/api/config` / `PUT /agents/api/config` / `POST /agents/api/reload` — in `erpclaw/agents_dashboard.py`
+- `GET /config/api` / `PUT /config/api` — in `erpclaw/config_panel.py`
+- `GET /chat/api/history` / `POST /chat/api/send` — in `erpclaw/chat.py`
+
+**Tailwind CSS v4 note:** Uses `@import "tailwindcss"` in CSS, no JS config file. The `@tailwindcss/vite` plugin handles everything. Adding plugins uses `@plugin` directive in CSS.
 
 ### Data Flow
 ```
@@ -101,6 +135,9 @@ Always use the latest version of `agno`. The agno API changes frequently — whe
 - `erpclaw/logistica_tools.py` — `LogisticaTools(Toolkit)`: tools for warehouse locations (Magazzino→Zona→Scaffale→Ripiano), stock assignment/transfer, order discharge, and movement history.
 - `erpclaw/fornitore_research_tools.py` — `FornitoreResearchTools(Toolkit)`: PDF catalog download (httpx), parsing (pdfplumber), DB management.
 - `erpclaw/agent.py` — `team` (agno `Team`) + `fornitore_research_agent` sub-agent + `memory_manager`. The `Team` is the entry point; it holds `ERPTools` + `LogisticaTools`, `db`, memory, and delegates to `fornitore_research_agent`. All components use `_make_model(thinking=True)`. `_strip_reasoning()` cleans Qwen3.5 thinking tags from responses.
+- `erpclaw/agents_dashboard.py` — `APIRouter(prefix="/agents")`: `GET/PUT /api/config` and `POST /api/reload` for the React Agent Dashboard.
+- `erpclaw/config_panel.py` — `APIRouter(prefix="/config")`: `GET/PUT /api` (JSON) for the React Config Panel. `parse_env`/`write_env` for `.env` file I/O. Uses Pydantic `_ConfigUpdate` model.
+- `erpclaw/chat.py` — `APIRouter(prefix="/chat")`: `GET /api/history` and `POST /api/send` for the React Chat page. Session-based chat history stored in memory (keyed by cookie).
 - `erpclaw/shop.py` — FastAPI `APIRouter(prefix="/shop")`: register/login/logout, article search (HTMX), cart (cookie JSON), checkout, order history. Auth via `itsdangerous` + `passlib[bcrypt]`.
 - `erpclaw/templates/shop/` — Jinja2 templates: `base.html`, `register.html`, `login.html`, `search.html`, `orders.html`, `_risultati.html` (HTMX partial), `_carrello.html` (HTMX partial).
 - `docs/lmstudio-settings.md` — LM Studio recommended settings for ERPClaw (GGUF variant, GPU offload, inference params).

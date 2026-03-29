@@ -48,20 +48,20 @@ Accessibile su **`http://localhost:8000/`**
 
 ## Dashboard Agenti
 
-Dashboard visuale in stile **n8n** per visualizzare e modificare il team di agenti AI in tempo reale.
+Dashboard visuale in stile **n8n** per visualizzare e modificare il team di agenti AI in tempo reale. Costruita con **React + @xyflow/react**.
 
 ![Agent Dashboard](Dashboard.png)
 
-Accessibile su **`http://localhost:8000/agents/`**
+Accessibile su **`http://localhost:5173/agents`** (dev) o **`http://localhost:8000/agents`** (produzione)
 
 ### Caratteristiche
 
-- **Visualizzazione a blocchi** — ogni componente (Team, Agenti, Tool, Memory Manager) è un nodo colorato con connessioni SVG
-- **Drag & drop** — riorganizza i blocchi trascinandoli sulla canvas
-- **Modifica in tempo reale** — doppio click (desktop) o tap sull'icona ✏️ (mobile) per editare nome, ruolo, instructions e parametri
-- **Salvataggio persistente** — la configurazione viene salvata in `agent_config.json`
+- **Canvas interattivo** — ogni componente (Team, Agenti, Tool, Memory Manager) è un nodo colorato con connessioni animate (@xyflow/react)
+- **Drag & drop** — riorganizza i nodi trascinandoli sulla canvas
+- **Modifica in tempo reale** — doppio click su un nodo per aprire l'editor laterale (shadcn Sheet)
+- **Salvataggio persistente** — la configurazione viene salvata in `agent_config.json` via API PUT
 - **Ricarica a caldo** — applica le modifiche senza riavviare il server
-- **Responsive / mobile** — funziona da cellulare con supporto touch completo
+- **Minimap** — visualizzazione compatta dell'intera topologia dell'agente
 
 ### Nodi visualizzati
 
@@ -83,8 +83,7 @@ Accessibile su **`http://localhost:8000/agents/`**
 | Database ERP | SQLite + SQLAlchemy |
 | Bot Telegram | python-telegram-bot |
 | Pannello web + shop | FastAPI + SQLAdmin + HTMX + Bootstrap 5 |
-| Dashboard agenti | FastAPI + Jinja2 + vanilla JS (canvas SVG) |
-| Pannello configurazione | FastAPI + Jinja2 (form .env con toggle LLM) |
+| Frontend SPA (admin) | Vite 6 + React 19 + TypeScript 5 + Tailwind CSS 4 + shadcn/ui + @xyflow/react |
 | Package manager | [uv](https://github.com/astral-sh/uv) |
 | Python | 3.13 |
 
@@ -134,15 +133,21 @@ SHOP_SECRET_KEY=...          # opzionale, default dev value
 # Avvia solo il bot Telegram
 uv run erpclaw
 
-# Avvia solo il pannello web (include admin + shop + dashboard agenti + config)
+# Avvia solo il backend FastAPI (admin CRUD + shop + API JSON)
 uv run uvicorn erpclaw.web:app --reload
-# → Home:      http://localhost:8000/
 # → Admin:     http://localhost:8000/admin
 # → Shop:      http://localhost:8000/shop/register
-# → Dashboard: http://localhost:8000/agents/
-# → Config:    http://localhost:8000/config/
 
-# Avvia entrambi (Windows)
+# Avvia il frontend React in modalità sviluppo (proxy verso FastAPI :8000)
+cd frontend && npm install   # solo la prima volta
+npm run dev
+# → http://localhost:5173
+# → Home:      http://localhost:5173/
+# → Dashboard: http://localhost:5173/agents
+# → Config:    http://localhost:5173/config
+# → Chat:      http://localhost:5173/chat
+
+# Avvia tutto insieme (Windows) — bot + backend + frontend React
 start.bat
 
 # Azzera e rigenera i database
@@ -150,6 +155,8 @@ reset_db.bat
 ```
 
 > **LM Studio:** avvia il server locale prima di lanciare il bot. Vedi `docs/lmstudio-settings.md` per le impostazioni consigliate.
+
+> **Build produzione:** `cd frontend && npm run build` — scrive in `frontend/dist/`. FastAPI serve automaticamente la SPA su `http://localhost:8000/`.
 
 ## Esempi d'uso
 
@@ -230,28 +237,36 @@ ERPClaw: 🚚 Spedizione completata!
 erpclaw/
 ├── agent.py                    # agno Team + sub-agente ricerca fornitori
 ├── agent_config.py             # gestione configurazione agenti (JSON)
-├── agents_dashboard.py         # dashboard visuale agenti (/agents)
-├── config_panel.py             # pannello configurazione .env (/config)
+├── agents_dashboard.py         # API JSON agenti (/agents/api/*)
+├── config_panel.py             # API JSON configurazione .env (/config/api)
+├── chat.py                     # API JSON chat (/chat/api/*)
 ├── bot.py                      # bot Telegram (testo + voce)
-├── web.py                      # pannello admin FastAPI + shop + dashboard + home
-├── shop.py                     # portale ordini clienti (/shop)
+├── web.py                      # FastAPI: admin + shop + SPA catch-all
+├── shop.py                     # portale ordini clienti (/shop, HTMX)
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
 ├── erp_tools.py                # tool ERP (articoli, categorie, clienti, ordini, indirizzi)
 ├── logistica_tools.py          # tool logistica (ubicazioni, stock, movimenti)
 ├── fornitore_research_tools.py # tool ricerca fornitori (PDF, web)
 ├── config.py                   # caricamento .env (LLM_PROVIDER, LLM_MODEL_ID, ecc.)
 └── templates/
-    ├── home.html               # homepage con menu card
-    ├── agents/                 # template dashboard agenti (n8n-style)
-    ├── chat/                   # template chat web
-    ├── config/                 # template pannello configurazione .env
-    └── shop/                   # template portale shop
+    └── shop/                   # template Jinja2 portale shop
+
+frontend/                       # React SPA (Vite + TypeScript + shadcn/ui)
+├── src/
+│   ├── pages/                  # Home, AgentDashboard, ConfigPanel, Chat
+│   ├── components/
+│   │   ├── layout/             # Sidebar, TopBar
+│   │   ├── agents/             # nodi xyflow + NodeEditSheet + flowUtils
+│   │   └── config/             # EnvSection
+│   └── lib/                    # types.ts, api.ts
+├── package.json
+└── vite.config.ts              # proxy /agents /config /chat /admin → :8000
 
 agent_config.json               # configurazione agenti (generato al primo avvio)
 tests/                          # suite pytest (SQLite in-memory)
 docs/
 ├── lmstudio-settings.md        # impostazioni consigliate LM Studio
-└── plans/                      # design doc e piani implementativi
+└── superpowers/                # design doc e piani implementativi
 esempi di chat/                 # export chat Telegram di esempio
 reset_db.bat                    # azzera e rigenera i database
 MANUALE_UTENTE.md               # manuale non tecnico per l'utente finale
