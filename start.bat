@@ -20,6 +20,12 @@ if errorlevel 1 (
     echo AVVISO: uv sync fallito. Le dipendenze esistenti verranno usate.
 )
 
+:: Avvia frontend React in dev (se node_modules esiste)
+if exist "frontend\node_modules\" (
+    echo Avvio frontend React...
+    start "ERPClaw Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
+)
+
 echo.
 echo   Home:      http://localhost:8000/
 echo   Admin:     http://localhost:8000/admin
