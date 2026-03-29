@@ -11,24 +11,29 @@ if errorlevel 1 (
         pause
         exit /b 1
     )
-    :: Aggiorna PATH per questa sessione
     set "PATH=%USERPROFILE%\.local\bin;%USERPROFILE%\.cargo\bin;%PATH%"
 )
 
 echo Installazione/aggiornamento dipendenze...
 uv sync
 if errorlevel 1 (
-    echo ERRORE: uv sync fallito.
-    pause
-    exit /b 1
+    echo AVVISO: uv sync fallito. Le dipendenze esistenti verranno usate.
 )
 
-echo Avvio pannello web (admin + shop + chat)...
-echo   Admin:  http://localhost:8000/admin
-echo   Shop:   http://localhost:8000/shop/register
-echo   Chat:   http://localhost:8000/chat
-start "ERPClaw Web" cmd /k "uv run uvicorn erpclaw.web:app --reload"
+echo.
+echo   Admin:     http://localhost:8000/admin
+echo   Shop:      http://localhost:8000/shop/register
+echo   Chat:      http://localhost:8000/chat
+echo   Dashboard: http://localhost:8000/agents/
+echo.
+
+echo Avvio pannello web...
+start "ERPClaw Web" cmd /k "cd /d %~dp0 && uv run uvicorn erpclaw.web:app --reload"
 timeout /t 2 /nobreak >nul
 
 echo Avvio bot Telegram...
 uv run erpclaw
+
+echo.
+echo Bot terminato. Premi un tasto per chiudere.
+pause

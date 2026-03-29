@@ -38,6 +38,8 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
 
 Dashboard visuale in stile **n8n** per visualizzare e modificare il team di agenti AI in tempo reale.
 
+![Agent Dashboard](Dashboard.png)
+
 Accessibile su **`http://localhost:8000/agents/`**
 
 ### Caratteristiche
