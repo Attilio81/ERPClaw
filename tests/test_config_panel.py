@@ -72,3 +72,58 @@ def test_write_env_preserves_other_keys(tmp_path):
     result = parse_env(env)
     assert result["FOO"] == "keep"
     assert result["BAR"] == "new"
+
+
+# ── Route tests ──────────────────────────────────────────────────────────────
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from erpclaw.config_panel import router, parse_env, write_env, ENV_PATH
+
+
+@pytest.fixture
+def client():
+    app = FastAPI()
+    app.include_router(router)
+    return TestClient(app, raise_server_exceptions=True)
+
+
+def test_get_config_returns_200(client, tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("LLM_PROVIDER=lmstudio\n")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    response = client.get("/config/")
+    assert response.status_code == 200
+
+
+def test_get_config_shows_saved_banner(client, tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    response = client.get("/config/?saved=true")
+    assert b"salvata" in response.content
+
+
+def test_post_config_redirects(client, tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("LLM_PROVIDER=lmstudio\n")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    response = client.post("/config/", data={"LLM_PROVIDER": "deepseek", "LLM_MODEL_ID": "deepseek-reasoner",
+        "LMSTUDIO_BASE_URL": "", "OPENAI_API_KEY": "", "DEEPSEEK_API_KEY": "sk-test",
+        "TELEGRAM_BOT_TOKEN": "", "ALLOWED_CHAT_ID": "", "SHOP_SECRET_KEY": ""},
+        follow_redirects=False)
+    assert response.status_code == 303
+    assert "/config/" in response.headers["location"]
+
+
+def test_post_config_writes_env(client, tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("LLM_PROVIDER=lmstudio\n")
+    monkeypatch.setattr("erpclaw.config_panel.ENV_PATH", env)
+    client.post("/config/", data={"LLM_PROVIDER": "deepseek", "LLM_MODEL_ID": "deepseek-reasoner",
+        "LMSTUDIO_BASE_URL": "http://localhost:1234/v1", "OPENAI_API_KEY": "",
+        "DEEPSEEK_API_KEY": "sk-test", "TELEGRAM_BOT_TOKEN": "", "ALLOWED_CHAT_ID": "",
+        "SHOP_SECRET_KEY": ""})
+    result = parse_env(env)
+    assert result["LLM_PROVIDER"] == "deepseek"
+    assert result["DEEPSEEK_API_KEY"] == "sk-test"
