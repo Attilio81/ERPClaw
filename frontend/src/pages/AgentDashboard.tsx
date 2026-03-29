@@ -64,6 +64,12 @@ export default function AgentDashboard() {
       }
       const saved = await agentApi.updateConfig(updated)
       setConfig(saved)
+      const { nodes: n, edges: e } = configToFlow(saved)
+      setNodes(prev => n.map(newNode => {
+        const existing = prev.find(p => p.id === newNode.id)
+        return existing ? { ...newNode, position: existing.position } : newNode
+      }))
+      setEdges(e)
       toast.success('Configurazione salvata su disco')
     } catch {
       toast.error('Errore durante il salvataggio')

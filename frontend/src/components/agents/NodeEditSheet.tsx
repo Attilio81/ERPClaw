@@ -91,6 +91,7 @@ export function NodeEditSheet({ nodeId, config, onClose, onSave }: NodeEditSheet
   } else if (nodeId.startsWith('agent:')) {
     const key = nodeId.split(':')[1]
     const a = draft.agents[key]
+    if (!a) return null
     title = `Agente: ${a.name}`
     body = (
       <div className="space-y-4">
@@ -125,6 +126,7 @@ export function NodeEditSheet({ nodeId, config, onClose, onSave }: NodeEditSheet
   } else if (nodeId.startsWith('tool:')) {
     const key = nodeId.split(':')[1]
     const t = draft.tools[key]
+    if (!t) return null
     title = `Tool: ${t.label}`
     body = (
       <div className="space-y-4">
@@ -148,6 +150,8 @@ export function NodeEditSheet({ nodeId, config, onClose, onSave }: NodeEditSheet
         </div>
       </div>
     )
+  } else {
+    return null
   }
 
   return (
