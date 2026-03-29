@@ -36,6 +36,16 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
 - **Homepage** — menu centrale con accesso rapido a tutte le sezioni (`/`)
 - **Memoria** — l'agente ricorda preferenze e contesto per ogni utente Telegram
 
+## Homepage
+
+Menu centrale con accesso rapido a tutte le sezioni del pannello web.
+
+![Homepage](home.png)
+
+Accessibile su **`http://localhost:8000/`**
+
+---
+
 ## Dashboard Agenti
 
 Dashboard visuale in stile **n8n** per visualizzare e modificare il team di agenti AI in tempo reale.
