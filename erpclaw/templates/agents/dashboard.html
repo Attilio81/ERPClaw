@@ -90,6 +90,32 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2
 
 /* ── Zoom indicator ──────────────────────────────────────── */
 .zoom-indicator{position:fixed;bottom:24px;right:24px;background:#16213e;border:1px solid #0f3460;padding:6px 14px;border-radius:6px;font-size:12px;color:#888;z-index:100}
+
+/* ── Mobile / Touch ──────────────────────────────────────── */
+@media(max-width:768px){
+  .topbar{height:auto;flex-wrap:wrap;padding:10px 12px;gap:8px}
+  .topbar h1{width:100%;font-size:15px}
+  .topbar h1 span{display:block;margin-left:0;margin-top:2px}
+  .topbar button{flex:1;padding:10px 8px;font-size:12px;margin-left:0}
+  .topbar .status{width:100%;text-align:center;margin-left:0}
+  .canvas{height:calc(100vh - 110px);-webkit-overflow-scrolling:touch}
+  .node{min-width:160px;max-width:220px;touch-action:none}
+  .node-header{padding:8px 10px;font-size:12px}
+  .node-header .icon{width:24px;height:24px;font-size:13px}
+  .node-body{padding:8px 10px;font-size:11px}
+  .node-body .tag{font-size:9px;padding:2px 6px}
+  .panel{width:100%;right:-100%}
+  .panel-overlay.open .panel{right:0}
+  .panel-content textarea{min-height:140px}
+  .zoom-indicator{display:none}
+  /* Edit button visible on mobile */
+  .node .edit-btn{display:flex!important}
+}
+/* Edit button on nodes (mobile-friendly tap target) */
+.node .edit-btn{display:none;position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:6px;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;align-items:center;justify-content:center;cursor:pointer;z-index:25}
+@media(hover:none){
+  .node .edit-btn{display:flex!important}
+}
 </style>
 </head>
 <body>
@@ -200,6 +226,7 @@ function createNode(canvas, type, dataKey, opts) {
 
   el.innerHTML = `
     <div class="port port-in"></div>
+    <button class="edit-btn" aria-label="Modifica">✏️</button>
     <div class="node-header">
       <div class="icon">${opts.icon}</div>
       <span>${opts.name}</span>
@@ -212,49 +239,81 @@ function createNode(canvas, type, dataKey, opts) {
     <div class="port port-out"></div>
   `;
 
-  // Drag
-  el.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.port')) return;
-    e.preventDefault();
-    el.classList.add('dragging');
-    dragState = {
-      el,
-      key: dataKey,
-      startX: e.clientX,
-      startY: e.clientY,
-      origX: parseInt(el.style.left),
-      origY: parseInt(el.style.top),
-    };
+  // Edit button (always visible on touch devices)
+  el.querySelector('.edit-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openPanel(dataKey);
   });
 
-  // Double-click to edit
+  // ── Mouse drag ──
+  el.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.port') || e.target.closest('.edit-btn')) return;
+    e.preventDefault();
+    startDrag(el, dataKey, e.clientX, e.clientY);
+  });
+
+  // ── Touch drag ──
+  el.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.port') || e.target.closest('.edit-btn')) return;
+    const t = e.touches[0];
+    startDrag(el, dataKey, t.clientX, t.clientY);
+  }, {passive: true});
+
+  // Double-click to edit (desktop)
   el.addEventListener('dblclick', () => openPanel(dataKey));
 
   canvas.appendChild(el);
 }
 
-// ── Drag handling ────────────────────────────────────────────
-document.addEventListener('mousemove', (e) => {
+function startDrag(el, key, clientX, clientY) {
+  el.classList.add('dragging');
+  dragState = {
+    el,
+    key,
+    startX: clientX,
+    startY: clientY,
+    origX: parseInt(el.style.left),
+    origY: parseInt(el.style.top),
+    moved: false,
+  };
+}
+
+// ── Drag handling (mouse + touch) ────────────────────────────
+function onDragMove(clientX, clientY) {
   if (!dragState) return;
-  const dx = e.clientX - dragState.startX;
-  const dy = e.clientY - dragState.startY;
+  const dx = clientX - dragState.startX;
+  const dy = clientY - dragState.startY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragState.moved = true;
   const newX = Math.max(0, dragState.origX + dx);
   const newY = Math.max(0, dragState.origY + dy);
   dragState.el.style.left = newX + 'px';
   dragState.el.style.top = newY + 'px';
   drawConnections();
-});
+}
 
-document.addEventListener('mouseup', () => {
+function onDragEnd() {
   if (!dragState) return;
   dragState.el.classList.remove('dragging');
-  // Save position
   const key = dragState.key;
   const x = parseInt(dragState.el.style.left);
   const y = parseInt(dragState.el.style.top);
   updatePosition(key, x, y);
   dragState = null;
-});
+}
+
+// Mouse
+document.addEventListener('mousemove', (e) => onDragMove(e.clientX, e.clientY));
+document.addEventListener('mouseup', onDragEnd);
+
+// Touch
+document.addEventListener('touchmove', (e) => {
+  if (!dragState) return;
+  e.preventDefault(); // prevent scroll while dragging a node
+  const t = e.touches[0];
+  onDragMove(t.clientX, t.clientY);
+}, {passive: false});
+document.addEventListener('touchend', onDragEnd);
+document.addEventListener('touchcancel', onDragEnd);
 
 function updatePosition(key, x, y) {
   if (key === 'team') CONFIG.team.position = {x, y};
