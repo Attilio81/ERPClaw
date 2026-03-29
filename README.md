@@ -32,6 +32,8 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
 - **Pannello web** — admin CRUD su browser (FastAPI + SQLAdmin)
 - **Portale shop clienti** — i clienti si registrano e ordinano via browser (`/shop`), senza Telegram
 - **Dashboard agenti** — visualizzazione e gestione del team AI in stile n8n (`/agents`)
+- **Pannello configurazione** — modifica il file `.env` dal browser senza aprirlo (`/config`)
+- **Homepage** — menu centrale con accesso rapido a tutte le sezioni (`/`)
 - **Memoria** — l'agente ricorda preferenze e contesto per ogni utente Telegram
 
 ## Dashboard Agenti
@@ -72,6 +74,7 @@ Accessibile su **`http://localhost:8000/agents/`**
 | Bot Telegram | python-telegram-bot |
 | Pannello web + shop | FastAPI + SQLAdmin + HTMX + Bootstrap 5 |
 | Dashboard agenti | FastAPI + Jinja2 + vanilla JS (canvas SVG) |
+| Pannello configurazione | FastAPI + Jinja2 (form .env con toggle LLM) |
 | Package manager | [uv](https://github.com/astral-sh/uv) |
 | Python | 3.13 |
 
@@ -121,11 +124,13 @@ SHOP_SECRET_KEY=...          # opzionale, default dev value
 # Avvia solo il bot Telegram
 uv run erpclaw
 
-# Avvia solo il pannello web (include admin + shop + dashboard agenti)
+# Avvia solo il pannello web (include admin + shop + dashboard agenti + config)
 uv run uvicorn erpclaw.web:app --reload
+# → Home:      http://localhost:8000/
 # → Admin:     http://localhost:8000/admin
 # → Shop:      http://localhost:8000/shop/register
 # → Dashboard: http://localhost:8000/agents/
+# → Config:    http://localhost:8000/config/
 
 # Avvia entrambi (Windows)
 start.bat
@@ -216,8 +221,9 @@ erpclaw/
 ├── agent.py                    # agno Team + sub-agente ricerca fornitori
 ├── agent_config.py             # gestione configurazione agenti (JSON)
 ├── agents_dashboard.py         # dashboard visuale agenti (/agents)
+├── config_panel.py             # pannello configurazione .env (/config)
 ├── bot.py                      # bot Telegram (testo + voce)
-├── web.py                      # pannello admin FastAPI + shop + dashboard
+├── web.py                      # pannello admin FastAPI + shop + dashboard + home
 ├── shop.py                     # portale ordini clienti (/shop)
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
 ├── erp_tools.py                # tool ERP (articoli, categorie, clienti, ordini, indirizzi)
@@ -225,8 +231,10 @@ erpclaw/
 ├── fornitore_research_tools.py # tool ricerca fornitori (PDF, web)
 ├── config.py                   # caricamento .env (LLM_PROVIDER, LLM_MODEL_ID, ecc.)
 └── templates/
+    ├── home.html               # homepage con menu card
     ├── agents/                 # template dashboard agenti (n8n-style)
     ├── chat/                   # template chat web
+    ├── config/                 # template pannello configurazione .env
     └── shop/                   # template portale shop
 
 agent_config.json               # configurazione agenti (generato al primo avvio)
