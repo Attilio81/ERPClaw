@@ -20,6 +20,13 @@ if errorlevel 1 (
     echo AVVISO: uv sync fallito. Le dipendenze esistenti verranno usate.
 )
 
+echo Avvio pannello web...
+start "ERPClaw Web" cmd /k "cd /d %~dp0 && uv run uvicorn erpclaw.web:app --reload"
+
+:: Attendi che FastAPI sia pronto prima di avviare il frontend
+echo Attendo avvio backend (5s)...
+timeout /t 5 /nobreak >nul
+
 :: Avvia frontend React in dev (installa npm se necessario)
 if exist "frontend\package.json" (
     if not exist "frontend\node_modules\" (
@@ -37,10 +44,6 @@ echo   React SPA: http://localhost:5173/         (Home, Dashboard, Config, Chat)
 echo   Admin:     http://localhost:8000/admin
 echo   Shop:      http://localhost:8000/shop/register
 echo.
-
-echo Avvio pannello web...
-start "ERPClaw Web" cmd /k "cd /d %~dp0 && uv run uvicorn erpclaw.web:app --reload"
-timeout /t 2 /nobreak >nul
 
 echo Avvio bot Telegram...
 uv run erpclaw

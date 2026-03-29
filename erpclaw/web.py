@@ -1,6 +1,6 @@
 """SQLAdmin web panel for ERPClaw — run with: uvicorn erpclaw.web:app --reload"""
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqladmin import Admin, ModelView
@@ -207,6 +207,10 @@ if (_DIST / "assets").exists():
 
 @app.get("/{full_path:path}", include_in_schema=False)
 async def spa_fallback(full_path: str):
+    # Non intercettare le rotte backend
+    for prefix in ("admin", "shop", "config", "chat", "agents"):
+        if full_path == prefix or full_path.startswith(prefix + "/"):
+            raise HTTPException(status_code=404)
     index = _DIST / "index.html"
     if index.exists():
         return FileResponse(str(index))

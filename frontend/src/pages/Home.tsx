@@ -34,7 +34,7 @@ export default function Home() {
       icon: <ExternalLink size={28} className="text-[#1a4a8a]" />,
       title: 'Admin DB',
       description: 'Gestisci articoli, clienti, ordini e magazzino via SQLAdmin',
-      action: () => window.open('/admin', '_blank'),
+      action: () => window.open(`http://${window.location.hostname}:8000/admin`, '_blank'),
     },
   ]
 
