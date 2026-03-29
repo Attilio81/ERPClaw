@@ -210,7 +210,6 @@ async def spa_fallback(full_path: str):
     index = _DIST / "index.html"
     if index.exists():
         return FileResponse(str(index))
-    from fastapi.responses import HTMLResponse
     return HTMLResponse(
         "<h1>Frontend non buildato.</h1><p>Esegui: <code>cd frontend && npm run build</code></p>",
         status_code=503,
