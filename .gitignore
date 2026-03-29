@@ -209,3 +209,6 @@ __marimo__/
 # ERPClaw local data
 *.db
 cataloghi/
+
+# Git worktrees
+.worktrees/
