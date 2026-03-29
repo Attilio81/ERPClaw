@@ -1,6 +1,6 @@
 from agno.agent import Agent
-from agno.db.sqlite import AsyncSqliteDb
-from agno.memory.manager import MemoryManager
+from agno.db.sqlite import SqliteDb
+from agno.learn import EntityMemoryConfig, LearningMachine, LearningMode, UserProfileConfig
 from agno.team import Team
 from agno.tools.duckduckgo import DuckDuckGoTools
 
@@ -39,16 +39,29 @@ def _resolve_tools(names: list[str]):
 
 
 # ── Build team from config ────────────────────────────────────
-db = AsyncSqliteDb(db_file="./agent.db")
+db = SqliteDb(db_file="./agent.db")
 
 
 def _build_team(cfg: dict) -> tuple[Team, dict[str, Agent]]:
     """Build the full agent team from a config dict."""
-    # Memory manager
-    mm = MemoryManager(
-        model=_make_model(),
+    mcfg = cfg.get("memory_manager", {})
+    learning = LearningMachine(
         db=db,
-        memory_capture_instructions=cfg["memory_manager"]["memory_capture_instructions"],
+        model=_make_model(),
+        user_profile=UserProfileConfig(
+            mode=LearningMode.ALWAYS,
+            additional_instructions=mcfg.get(
+                "memory_capture_instructions",
+                "Raccogli il nome dell'utente, le sue preferenze e interessi.",
+            ),
+        ),
+        entity_memory=EntityMemoryConfig(
+            mode=LearningMode.ALWAYS,
+            namespace="erp",
+            additional_instructions=(
+                "Traccia clienti, fornitori e articoli menzionati nelle conversazioni."
+            ),
+        ),
     )
 
     # Sub-agents
@@ -71,8 +84,8 @@ def _build_team(cfg: dict) -> tuple[Team, dict[str, Agent]]:
         tools=_resolve_tools(tcfg.get("tools", [])),
         members=[agents[m] for m in tcfg.get("members", []) if m in agents],
         db=db,
-        memory_manager=mm,
-        enable_agentic_memory=True,
+        learning=learning,
+        cache_session=True,
         add_history_to_context=True,
         num_history_runs=tcfg.get("num_history_runs", 5),
         add_datetime_to_context=True,
