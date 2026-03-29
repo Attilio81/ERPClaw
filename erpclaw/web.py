@@ -193,3 +193,25 @@ admin.add_view(ScaffaleAdmin)
 admin.add_view(RipianoAdmin)
 admin.add_view(StockUbicazioneAdmin)
 admin.add_view(MovimentoMagazzinoAdmin)
+
+# ── SPA catch-all (solo se frontend/dist esiste) ──────────────────────────────
+from pathlib import Path as _Path
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+_DIST = _Path("frontend/dist")
+
+if (_DIST / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(_DIST / "assets")), name="spa-assets")
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+async def spa_fallback(full_path: str):
+    index = _DIST / "index.html"
+    if index.exists():
+        return FileResponse(str(index))
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(
+        "<h1>Frontend non buildato.</h1><p>Esegui: <code>cd frontend && npm run build</code></p>",
+        status_code=503,
+    )
