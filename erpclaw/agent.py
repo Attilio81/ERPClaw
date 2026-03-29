@@ -123,4 +123,4 @@ def _strip_reasoning(text: str) -> str:
 async def run_agent(user_message: str, user_id: str = "default_user") -> str:
     """Process a user message through the AI agent and return the response."""
     response = await team.arun(user_message, user_id=user_id)
-    return _strip_reasoning(response.content)
+    return _strip_reasoning(response.content or "")

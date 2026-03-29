@@ -56,3 +56,11 @@ def test_api_send_adds_to_history(client):
     assert len(history) == 2  # user + assistant
     assert history[0]["role"] == "user"
     assert history[0]["content"] == "Domanda"
+
+
+def test_api_send_agent_exception_returns_error_in_content(client):
+    with patch("erpclaw.chat.run_agent", new_callable=AsyncMock) as mock:
+        mock.side_effect = RuntimeError("LM Studio offline")
+        r = client.post("/chat/api/send", json={"message": "Ciao"})
+    assert r.status_code == 200
+    assert "Errore" in r.json()["content"]
