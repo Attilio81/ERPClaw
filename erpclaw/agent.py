@@ -1,3 +1,6 @@
+import json as _json
+import logging as _logging
+
 from agno.agent import Agent
 from agno.db.sqlite import SqliteDb
 from agno.learn import EntityMemoryConfig, LearningMachine, LearningMode, UserProfileConfig
@@ -5,6 +8,26 @@ from agno.team import Team
 from agno.tools.duckduckgo import DuckDuckGoTools
 
 from erpclaw.agent_config import get_config
+
+_logger = _logging.getLogger(__name__)
+
+
+class SafeDuckDuckGoTools(DuckDuckGoTools):
+    """DuckDuckGoTools that returns an empty result instead of crashing."""
+
+    def web_search(self, query: str, max_results: int = 5) -> str:
+        try:
+            return super().web_search(query, max_results)
+        except Exception as exc:
+            _logger.warning("web_search failed for %r: %s", query, exc)
+            return _json.dumps({"error": "Nessun risultato trovato. Prova con una query più breve e generica."})
+
+    def search_news(self, query: str, max_results: int = 5) -> str:
+        try:
+            return super().search_news(query, max_results)
+        except Exception as exc:
+            _logger.warning("search_news failed for %r: %s", query, exc)
+            return _json.dumps({"error": "Nessun risultato trovato. Prova con una query più breve e generica."})
 from erpclaw.config import DEEPSEEK_API_KEY, LLM_MODEL_ID, LLM_PROVIDER, LMSTUDIO_BASE_URL
 from erpclaw.erp_tools import ERPTools
 from erpclaw.fornitore_research_tools import FornitoreResearchTools
@@ -28,7 +51,7 @@ def _make_model(thinking: bool = False):
 TOOL_CLASSES = {
     "ERPTools": ERPTools,
     "LogisticaTools": LogisticaTools,
-    "DuckDuckGoTools": DuckDuckGoTools,
+    "DuckDuckGoTools": SafeDuckDuckGoTools,
     "FornitoreResearchTools": FornitoreResearchTools,
 }
 
@@ -123,4 +146,4 @@ def _strip_reasoning(text: str) -> str:
 async def run_agent(user_message: str, user_id: str = "default_user") -> str:
     """Process a user message through the AI agent and return the response."""
     response = await team.arun(user_message, user_id=user_id)
-    return _strip_reasoning(response.content)
+    return _strip_reasoning(response.content or "")
