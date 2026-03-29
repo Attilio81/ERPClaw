@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERPClaw</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+
+h1{font-size:28px;font-weight:700;color:#e94560;margin-bottom:6px}
+.subtitle{font-size:14px;color:#666;margin-bottom:48px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;width:100%;max-width:900px}
+
+.card{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:28px 24px;text-decoration:none;color:#e0e0e0;transition:all .2s;display:flex;flex-direction:column;gap:10px}
+.card:hover{background:#1a2a4e;border-color:#2a6ad4;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+.card-icon{font-size:28px}
+.card-title{font-size:16px;font-weight:600;color:#e0e0e0}
+.card-desc{font-size:12px;color:#666;line-height:1.5}
+
+.card.admin   .card-icon{color:#e94560}
+.card.agents  .card-icon{color:#7eb8f7}
+.card.config  .card-icon{color:#f0a500}
+.card.shop    .card-icon{color:#2a9d5c}
+.card.chat    .card-icon{color:#a78bfa}
+</style>
+</head>
+<body>
+
+<h1>ERPClaw</h1>
+<p class="subtitle">Mini-ERP gestito da AI — seleziona una sezione</p>
+
+<div class="grid">
+
+  <a href="/admin" class="card admin">
+    <span class="card-icon">&#9783;</span>
+    <span class="card-title">Admin</span>
+    <span class="card-desc">Gestione dati ERP: articoli, clienti, ordini, magazzino</span>
+  </a>
+
+  <a href="/agents/" class="card agents">
+    <span class="card-icon">&#9881;</span>
+    <span class="card-title">Agenti AI</span>
+    <span class="card-desc">Dashboard e configurazione degli agenti LLM</span>
+  </a>
+
+  <a href="/config/" class="card config">
+    <span class="card-icon">&#9881;</span>
+    <span class="card-title">Configurazione</span>
+    <span class="card-desc">Modifica le variabili .env: provider AI, token, chiavi API</span>
+  </a>
+
+  <a href="/chat" class="card chat">
+    <span class="card-icon">&#128172;</span>
+    <span class="card-title">Chat</span>
+    <span class="card-desc">Interfaccia web per chattare con l'agente ERP</span>
+  </a>
+
+  <a href="/shop/register" class="card shop">
+    <span class="card-icon">&#128722;</span>
+    <span class="card-title">Shop</span>
+    <span class="card-desc">Portale clienti: registrazione, catalogo, ordini</span>
+  </a>
+
+</div>
+
+</body>
+</html>

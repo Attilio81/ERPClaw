@@ -1,6 +1,8 @@
 """SQLAdmin web panel for ERPClaw — run with: uvicorn erpclaw.web:app --reload"""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqladmin import Admin, ModelView
 
 from erpclaw.erp_db import (
@@ -14,6 +16,13 @@ from erpclaw.erp_db import (
 init_db()
 
 app = FastAPI(title="ERPClaw Admin")
+_templates = Jinja2Templates(directory="erpclaw/templates")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return _templates.TemplateResponse(request, "home.html", {})
+
 
 from erpclaw.shop import router as shop_router
 from erpclaw.chat import router as chat_router
