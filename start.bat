@@ -21,6 +21,7 @@ if errorlevel 1 (
 )
 
 echo.
+echo   Home:      http://localhost:8000/
 echo   Admin:     http://localhost:8000/admin
 echo   Shop:      http://localhost:8000/shop/register
 echo   Chat:      http://localhost:8000/chat
