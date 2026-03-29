@@ -1,7 +1,9 @@
 """Test per config_panel: funzioni parse_env / write_env e route GET/POST."""
 import pytest
 from pathlib import Path
-from erpclaw.config_panel import parse_env, write_env
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from erpclaw.config_panel import parse_env, write_env, router
 
 
 # ── parse_env ────────────────────────────────────────────────────────────────
@@ -75,11 +77,6 @@ def test_write_env_preserves_other_keys(tmp_path):
 
 
 # ── Route tests ──────────────────────────────────────────────────────────────
-
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from erpclaw.config_panel import router, parse_env, write_env, ENV_PATH
-
 
 @pytest.fixture
 def client():
