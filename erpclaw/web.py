@@ -1,7 +1,7 @@
 """SQLAdmin web panel for ERPClaw — run with: uvicorn erpclaw.web:app --reload"""
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqladmin import Admin, ModelView
 
@@ -32,6 +32,10 @@ app.include_router(shop_router)
 app.include_router(chat_router)
 app.include_router(agents_router)
 app.include_router(config_router)
+
+@app.get("/admin", include_in_schema=False)
+async def admin_redirect():
+    return RedirectResponse(url="/admin/")
 
 admin = Admin(app, engine, title="ERPClaw")
 
@@ -207,8 +211,8 @@ if (_DIST / "assets").exists():
 
 @app.get("/{full_path:path}", include_in_schema=False)
 async def spa_fallback(full_path: str):
-    # Non intercettare le rotte backend
-    for prefix in ("admin", "shop", "config", "chat", "agents"):
+    # Non intercettare le rotte backend (admin ha il suo redirect sopra)
+    for prefix in ("shop", "config", "chat", "agents"):
         if full_path == prefix or full_path.startswith(prefix + "/"):
             raise HTTPException(status_code=404)
     index = _DIST / "index.html"
