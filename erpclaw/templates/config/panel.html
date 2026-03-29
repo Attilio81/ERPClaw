@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERPClaw — Configurazione</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh}
+
+.topbar{height:52px;background:#16213e;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid #0f3460}
+.topbar h1{font-size:16px;font-weight:600;color:#e94560;margin-right:auto}
+.topbar h1 span{color:#999;font-weight:400;margin-left:8px;font-size:13px}
+.topbar a{color:#7eb8f7;font-size:13px;text-decoration:none;margin-left:16px}
+.topbar a:hover{color:#e0e0e0}
+
+.container{max-width:640px;margin:40px auto;padding:0 20px}
+
+.banner{padding:12px 16px;border-radius:8px;margin-bottom:24px;font-size:14px}
+.banner.ok{background:#1b3a2a;border:1px solid #2a9d5c;color:#2a9d5c}
+.banner.info{background:#1a2a3e;border:1px solid #0f3460;color:#7eb8f7}
+
+.section{background:#16213e;border:1px solid #0f3460;border-radius:10px;margin-bottom:20px;overflow:hidden}
+.section-title{padding:12px 16px;background:#0f1d35;font-size:12px;font-weight:600;color:#7eb8f7;text-transform:uppercase;letter-spacing:.05em}
+
+.field{padding:14px 16px;border-bottom:1px solid #0f2040}
+.field:last-child{border-bottom:none}
+.field label{display:block;font-size:12px;color:#888;margin-bottom:6px}
+.field-input{display:flex;gap:8px;align-items:center}
+.field input[type=text],.field input[type=password]{flex:1;background:#1a2a3e;border:1px solid #0f3460;color:#e0e0e0;padding:8px 12px;border-radius:6px;font-size:13px;font-family:monospace}
+.field input:focus{outline:none;border-color:#2a6ad4}
+.toggle-vis{background:#0f3460;border:none;color:#7eb8f7;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;flex-shrink:0}
+.toggle-vis:hover{background:#1a4a8a}
+
+/* LLM Provider toggle */
+.provider-toggle{display:flex;gap:0;padding:14px 16px}
+.provider-toggle label{flex:1;text-align:center;padding:10px;cursor:pointer;border:1px solid #0f3460;font-size:13px;transition:all .2s}
+.provider-toggle label:first-of-type{border-radius:8px 0 0 8px}
+.provider-toggle label:last-of-type{border-radius:0 8px 8px 0;border-left:none}
+.provider-toggle input[type=radio]{display:none}
+.provider-toggle input[type=radio]:checked + label{background:#0f3460;color:#7eb8f7;border-color:#2a6ad4}
+.provider-toggle label:hover{background:#0f2040}
+
+.actions{display:flex;align-items:center;gap:12px;margin-top:8px}
+.btn-save{background:#1b6b3a;color:#e0e0e0;border:1px solid #2a9d5c;padding:10px 24px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s}
+.btn-save:hover{background:#2a9d5c}
+.note{font-size:12px;color:#666}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>ERPClaw <span>Configurazione</span></h1>
+  <a href="/admin">Admin</a>
+  <a href="/agents/">Agenti</a>
+</div>
+
+<div class="container">
+
+{% if saved %}
+<div class="banner ok">Configurazione salvata. Le modifiche avranno effetto al prossimo riavvio del bot.</div>
+{% endif %}
+
+<div class="banner info">Modifica le variabili di configurazione. Riavvia il bot dopo il salvataggio.</div>
+
+<form method="post" action="/config/">
+<input type="hidden" name="LLM_PROVIDER" id="llm_provider_value" value="{{ values.get('LLM_PROVIDER', 'lmstudio') }}">
+
+<!-- LLM Provider -->
+<div class="section">
+  <div class="section-title">Provider AI</div>
+  <div class="provider-toggle">
+    <input type="radio" name="_provider" id="prov_lmstudio" value="lmstudio"
+      {% if values.get('LLM_PROVIDER', 'lmstudio') == 'lmstudio' %}checked{% endif %}
+      onchange="setProvider('lmstudio')">
+    <label for="prov_lmstudio">LM Studio (locale)</label>
+    <input type="radio" name="_provider" id="prov_deepseek" value="deepseek"
+      {% if values.get('LLM_PROVIDER') == 'deepseek' %}checked{% endif %}
+      onchange="setProvider('deepseek')">
+    <label for="prov_deepseek">DeepSeek (cloud)</label>
+  </div>
+
+  <div class="field">
+    <label for="LLM_MODEL_ID">Modello (LLM_MODEL_ID)</label>
+    <input type="text" id="LLM_MODEL_ID" name="LLM_MODEL_ID"
+      value="{{ values.get('LLM_MODEL_ID', '') }}" autocomplete="off">
+  </div>
+
+  <div class="field" id="field_lmstudio_url">
+    <label for="LMSTUDIO_BASE_URL">URL LM Studio (LMSTUDIO_BASE_URL)</label>
+    <input type="text" id="LMSTUDIO_BASE_URL" name="LMSTUDIO_BASE_URL"
+      value="{{ values.get('LMSTUDIO_BASE_URL', 'http://localhost:1234/v1') }}" autocomplete="off">
+  </div>
+
+  <div class="field" id="field_deepseek_key">
+    <label for="DEEPSEEK_API_KEY">DeepSeek API Key (DEEPSEEK_API_KEY)</label>
+    <div class="field-input">
+      <input type="password" id="DEEPSEEK_API_KEY" name="DEEPSEEK_API_KEY"
+        value="{{ values.get('DEEPSEEK_API_KEY', '') }}" autocomplete="off">
+      <button type="button" class="toggle-vis" onclick="toggleVis('DEEPSEEK_API_KEY', this)">mostra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Telegram -->
+<div class="section">
+  <div class="section-title">Telegram</div>
+  <div class="field">
+    <label for="TELEGRAM_BOT_TOKEN">Bot Token (TELEGRAM_BOT_TOKEN)</label>
+    <div class="field-input">
+      <input type="password" id="TELEGRAM_BOT_TOKEN" name="TELEGRAM_BOT_TOKEN"
+        value="{{ values.get('TELEGRAM_BOT_TOKEN', '') }}" autocomplete="off">
+      <button type="button" class="toggle-vis" onclick="toggleVis('TELEGRAM_BOT_TOKEN', this)">mostra</button>
+    </div>
+  </div>
+  <div class="field">
+    <label for="ALLOWED_CHAT_ID">Chat ID consentito (ALLOWED_CHAT_ID)</label>
+    <div class="field-input">
+      <input type="password" id="ALLOWED_CHAT_ID" name="ALLOWED_CHAT_ID"
+        value="{{ values.get('ALLOWED_CHAT_ID', '') }}" autocomplete="off">
+      <button type="button" class="toggle-vis" onclick="toggleVis('ALLOWED_CHAT_ID', this)">mostra</button>
+    </div>
+  </div>
+</div>
+
+<!-- API Keys -->
+<div class="section">
+  <div class="section-title">API Keys</div>
+  <div class="field">
+    <label for="OPENAI_API_KEY">OpenAI API Key — Whisper (OPENAI_API_KEY)</label>
+    <div class="field-input">
+      <input type="password" id="OPENAI_API_KEY" name="OPENAI_API_KEY"
+        value="{{ values.get('OPENAI_API_KEY', '') }}" autocomplete="off">
+      <button type="button" class="toggle-vis" onclick="toggleVis('OPENAI_API_KEY', this)">mostra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shop -->
+<div class="section">
+  <div class="section-title">Shop</div>
+  <div class="field">
+    <label for="SHOP_SECRET_KEY">Chiave sessione (SHOP_SECRET_KEY)</label>
+    <div class="field-input">
+      <input type="password" id="SHOP_SECRET_KEY" name="SHOP_SECRET_KEY"
+        value="{{ values.get('SHOP_SECRET_KEY', '') }}" autocomplete="off">
+      <button type="button" class="toggle-vis" onclick="toggleVis('SHOP_SECRET_KEY', this)">mostra</button>
+    </div>
+  </div>
+</div>
+
+<div class="actions">
+  <button type="submit" class="btn-save">Salva</button>
+  <span class="note">Riavvia il bot per applicare le modifiche.</span>
+</div>
+
+</form>
+</div>
+
+<script>
+function toggleVis(id, btn) {
+  const input = document.getElementById(id);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = 'nascondi';
+  } else {
+    input.type = 'password';
+    btn.textContent = 'mostra';
+  }
+}
+
+function setProvider(provider) {
+  document.getElementById('llm_provider_value').value = provider;
+  document.getElementById('field_lmstudio_url').style.display =
+    provider === 'lmstudio' ? '' : 'none';
+  document.getElementById('field_deepseek_key').style.display =
+    provider === 'deepseek' ? '' : 'none';
+}
+
+// Init on load
+setProvider(document.getElementById('llm_provider_value').value);
+</script>
+
+</body>
+</html>
