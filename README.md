@@ -31,7 +31,32 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
 - **Messaggi vocali** — trascrizione automatica via OpenAI Whisper
 - **Pannello web** — admin CRUD su browser (FastAPI + SQLAdmin)
 - **Portale shop clienti** — i clienti si registrano e ordinano via browser (`/shop`), senza Telegram
+- **Dashboard agenti** — visualizzazione e gestione del team AI in stile n8n (`/agents`)
 - **Memoria** — l'agente ricorda preferenze e contesto per ogni utente Telegram
+
+## Dashboard Agenti
+
+Dashboard visuale in stile **n8n** per visualizzare e modificare il team di agenti AI in tempo reale.
+
+Accessibile su **`http://localhost:8000/agents/`**
+
+### Caratteristiche
+
+- **Visualizzazione a blocchi** — ogni componente (Team, Agenti, Tool, Memory Manager) è un nodo colorato con connessioni SVG
+- **Drag & drop** — riorganizza i blocchi trascinandoli sulla canvas
+- **Modifica in tempo reale** — doppio click (desktop) o tap sull'icona ✏️ (mobile) per editare nome, ruolo, instructions e parametri
+- **Salvataggio persistente** — la configurazione viene salvata in `agent_config.json`
+- **Ricarica a caldo** — applica le modifiche senza riavviare il server
+- **Responsive / mobile** — funziona da cellulare con supporto touch completo
+
+### Nodi visualizzati
+
+| Nodo | Colore | Contenuto |
+|------|--------|-----------|
+| Team ERPClaw | Rosso | Prompt principale, tools, membri, history |
+| Agenti (es. RicercaFornitore) | Viola | Ruolo, instructions, thinking on/off |
+| Tool (ERPTools, LogisticaTools, ecc.) | Blu | Descrizione, lista metodi |
+| Memory Manager | Verde | Istruzioni di cattura memoria |
 
 ## Stack tecnico
 
@@ -44,6 +69,7 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
 | Database ERP | SQLite + SQLAlchemy |
 | Bot Telegram | python-telegram-bot |
 | Pannello web + shop | FastAPI + SQLAdmin + HTMX + Bootstrap 5 |
+| Dashboard agenti | FastAPI + Jinja2 + vanilla JS (canvas SVG) |
 | Package manager | [uv](https://github.com/astral-sh/uv) |
 | Python | 3.13 |
 
@@ -93,10 +119,11 @@ SHOP_SECRET_KEY=...          # opzionale, default dev value
 # Avvia solo il bot Telegram
 uv run erpclaw
 
-# Avvia solo il pannello web (include admin + shop)
+# Avvia solo il pannello web (include admin + shop + dashboard agenti)
 uv run uvicorn erpclaw.web:app --reload
-# → Admin: http://localhost:8000/admin
-# → Shop:  http://localhost:8000/shop/register
+# → Admin:     http://localhost:8000/admin
+# → Shop:      http://localhost:8000/shop/register
+# → Dashboard: http://localhost:8000/agents/
 
 # Avvia entrambi (Windows)
 start.bat
@@ -185,16 +212,22 @@ ERPClaw: 🚚 Spedizione completata!
 ```
 erpclaw/
 ├── agent.py                    # agno Team + sub-agente ricerca fornitori
+├── agent_config.py             # gestione configurazione agenti (JSON)
+├── agents_dashboard.py         # dashboard visuale agenti (/agents)
 ├── bot.py                      # bot Telegram (testo + voce)
-├── web.py                      # pannello admin FastAPI + shop router
+├── web.py                      # pannello admin FastAPI + shop + dashboard
 ├── shop.py                     # portale ordini clienti (/shop)
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
 ├── erp_tools.py                # tool ERP (articoli, categorie, clienti, ordini, indirizzi)
 ├── logistica_tools.py          # tool logistica (ubicazioni, stock, movimenti)
 ├── fornitore_research_tools.py # tool ricerca fornitori (PDF, web)
 ├── config.py                   # caricamento .env (LLM_PROVIDER, LLM_MODEL_ID, ecc.)
-└── templates/shop/             # template Jinja2 per il portale shop
+└── templates/
+    ├── agents/                 # template dashboard agenti (n8n-style)
+    ├── chat/                   # template chat web
+    └── shop/                   # template portale shop
 
+agent_config.json               # configurazione agenti (generato al primo avvio)
 tests/                          # suite pytest (SQLite in-memory)
 docs/
 ├── lmstudio-settings.md        # impostazioni consigliate LM Studio

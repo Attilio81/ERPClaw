@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERPClaw — Agent Dashboard</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────── */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;overflow:hidden;height:100vh}
+
+/* ── Top Bar ──────────────────────────────────────────────── */
+.topbar{height:52px;background:#16213e;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid #0f3460;z-index:100;position:relative}
+.topbar h1{font-size:16px;font-weight:600;color:#e94560;margin-right:auto}
+.topbar h1 span{color:#999;font-weight:400;margin-left:8px;font-size:13px}
+.topbar button{background:#0f3460;color:#e0e0e0;border:1px solid #1a4a8a;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;margin-left:8px;transition:all .2s}
+.topbar button:hover{background:#1a4a8a;border-color:#2a6ad4}
+.topbar .btn-reload{background:#533483;border-color:#7b2d8e}
+.topbar .btn-reload:hover{background:#7b2d8e}
+.topbar .btn-save{background:#1b6b3a;border-color:#2a9d5c}
+.topbar .btn-save:hover{background:#2a9d5c}
+.topbar .status{font-size:12px;color:#888;margin-left:12px;transition:color .3s}
+.topbar .status.ok{color:#2a9d5c}
+
+/* ── Canvas ───────────────────────────────────────────────── */
+.canvas{position:relative;width:100%;height:calc(100vh - 52px);overflow:auto;background:
+  radial-gradient(circle,#1e2749 1px,transparent 1px);
+  background-size:24px 24px}
+.canvas svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.canvas svg path{fill:none;stroke-width:2.5;stroke-linecap:round}
+
+/* ── Nodes ────────────────────────────────────────────────── */
+.node{position:absolute;min-width:200px;max-width:280px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.35);cursor:grab;z-index:10;user-select:none;transition:box-shadow .2s}
+.node:hover{box-shadow:0 6px 28px rgba(0,0,0,.5)}
+.node.dragging{cursor:grabbing;z-index:50;box-shadow:0 8px 32px rgba(233,69,96,.3)}
+.node-header{padding:10px 14px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}
+.node-header .icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.node-body{padding:10px 14px;font-size:12px;color:#bbb;border-radius:0 0 10px 10px;background:#1e2640}
+.node-body .tag{display:inline-block;background:#0f3460;color:#7eb8f7;padding:2px 8px;border-radius:4px;font-size:10px;margin:2px 2px}
+.node-body .meta{margin-top:6px;color:#888;font-size:11px}
+.node-body .tools-count{color:#e94560;font-weight:600}
+
+/* Node types */
+.node-team .node-header{background:linear-gradient(135deg,#e94560,#c22d4b)}
+.node-team .node-header .icon{background:rgba(255,255,255,.2);color:#fff}
+.node-agent .node-header{background:linear-gradient(135deg,#533483,#7b2d8e)}
+.node-agent .node-header .icon{background:rgba(255,255,255,.2);color:#fff}
+.node-tool .node-header{background:linear-gradient(135deg,#0f3460,#1a4a8a)}
+.node-tool .node-header .icon{background:rgba(255,255,255,.15);color:#7eb8f7}
+.node-memory .node-header{background:linear-gradient(135deg,#1b6b3a,#2a9d5c)}
+.node-memory .node-header .icon{background:rgba(255,255,255,.2);color:#fff}
+
+/* Ports (connection dots) */
+.port{width:12px;height:12px;border-radius:50%;position:absolute;border:2px solid #1a1a2e;z-index:20;cursor:default}
+.port-out{right:-6px;top:50%;transform:translateY(-50%)}
+.port-in{left:-6px;top:50%;transform:translateY(-50%)}
+.node-team .port{background:#e94560}
+.node-agent .port{background:#7b2d8e}
+.node-tool .port{background:#1a4a8a}
+.node-memory .port{background:#2a9d5c}
+
+/* ── Side Panel (editor) ─────────────────────────────────── */
+.panel-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+.panel-overlay.open{opacity:1;pointer-events:all}
+.panel{position:fixed;top:0;right:-520px;width:520px;height:100%;background:#16213e;border-left:1px solid #0f3460;z-index:210;transition:right .3s;display:flex;flex-direction:column;overflow:hidden}
+.panel-overlay.open .panel{right:0}
+.panel-header{padding:16px 20px;border-bottom:1px solid #0f3460;display:flex;align-items:center;justify-content:between}
+.panel-header h2{font-size:15px;flex:1}
+.panel-header .close-btn{background:none;border:none;color:#999;font-size:20px;cursor:pointer;padding:4px 8px}
+.panel-header .close-btn:hover{color:#e94560}
+.panel-content{flex:1;overflow-y:auto;padding:20px}
+.panel-content label{display:block;font-size:12px;color:#999;margin-bottom:4px;margin-top:14px;text-transform:uppercase;letter-spacing:.5px}
+.panel-content label:first-child{margin-top:0}
+.panel-content input,.panel-content textarea,.panel-content select{width:100%;background:#1a1a2e;border:1px solid #0f3460;color:#e0e0e0;padding:10px 12px;border-radius:6px;font-size:13px;font-family:inherit;resize:vertical}
+.panel-content input:focus,.panel-content textarea:focus,.panel-content select:focus{outline:none;border-color:#533483}
+.panel-content textarea{min-height:180px;line-height:1.5}
+.panel-content .tools-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.panel-content .tool-badge{background:#0f3460;color:#7eb8f7;padding:4px 10px;border-radius:4px;font-size:11px}
+.panel-footer{padding:16px 20px;border-top:1px solid #0f3460;display:flex;gap:8px}
+.panel-footer button{flex:1;padding:10px;border-radius:6px;border:none;font-size:13px;cursor:pointer;font-weight:600}
+.panel-footer .btn-apply{background:#533483;color:#fff}
+.panel-footer .btn-apply:hover{background:#7b2d8e}
+.panel-footer .btn-cancel{background:#1a1a2e;color:#999;border:1px solid #0f3460}
+.panel-footer .btn-cancel:hover{color:#e0e0e0}
+
+/* ── Toast ────────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#2a9d5c;color:#fff;padding:10px 24px;border-radius:8px;font-size:13px;z-index:500;transition:transform .3s;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{background:#e94560}
+
+/* ── Zoom indicator ──────────────────────────────────────── */
+.zoom-indicator{position:fixed;bottom:24px;right:24px;background:#16213e;border:1px solid #0f3460;padding:6px 14px;border-radius:6px;font-size:12px;color:#888;z-index:100}
+
+/* ── Mobile / Touch ──────────────────────────────────────── */
+@media(max-width:768px){
+  .topbar{height:auto;flex-wrap:wrap;padding:10px 12px;gap:8px}
+  .topbar h1{width:100%;font-size:15px}
+  .topbar h1 span{display:block;margin-left:0;margin-top:2px}
+  .topbar button{flex:1;padding:10px 8px;font-size:12px;margin-left:0}
+  .topbar .status{width:100%;text-align:center;margin-left:0}
+  .canvas{height:calc(100vh - 110px);-webkit-overflow-scrolling:touch}
+  .node{min-width:160px;max-width:220px;touch-action:none}
+  .node-header{padding:8px 10px;font-size:12px}
+  .node-header .icon{width:24px;height:24px;font-size:13px}
+  .node-body{padding:8px 10px;font-size:11px}
+  .node-body .tag{font-size:9px;padding:2px 6px}
+  .panel{width:100%;right:-100%}
+  .panel-overlay.open .panel{right:0}
+  .panel-content textarea{min-height:140px}
+  .zoom-indicator{display:none}
+  /* Edit button visible on mobile */
+  .node .edit-btn{display:flex!important}
+}
+/* Edit button on nodes (mobile-friendly tap target) */
+.node .edit-btn{display:none;position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:6px;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;align-items:center;justify-content:center;cursor:pointer;z-index:25}
+@media(hover:none){
+  .node .edit-btn{display:flex!important}
+}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <h1>ERPClaw <span>Agent Dashboard</span></h1>
+  <button class="btn-save" onclick="saveConfig()">💾 Salva Configurazione</button>
+  <button class="btn-reload" onclick="reloadAgents()">🔄 Ricarica Agenti</button>
+  <span class="status" id="statusText"></span>
+</div>
+
+<!-- Canvas -->
+<div class="canvas" id="canvas">
+  <svg id="connections"></svg>
+</div>
+
+<!-- Side Panel -->
+<div class="panel-overlay" id="panelOverlay">
+  <div class="panel" id="panel">
+    <div class="panel-header">
+      <h2 id="panelTitle">Modifica</h2>
+      <button class="close-btn" onclick="closePanel()">&times;</button>
+    </div>
+    <div class="panel-content" id="panelContent"></div>
+    <div class="panel-footer">
+      <button class="btn-cancel" onclick="closePanel()">Annulla</button>
+      <button class="btn-apply" onclick="applyPanel()">Applica</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Zoom indicator -->
+<div class="zoom-indicator" id="zoomIndicator">100%</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+let CONFIG = {{ config | tojson }};
+let currentEdit = null;  // {type, key}
+let dragState = null;
+let scale = 1;
+
+// ── Render all nodes ─────────────────────────────────────────
+function render() {
+  const canvas = document.getElementById('canvas');
+  // Remove existing nodes (keep SVG)
+  canvas.querySelectorAll('.node').forEach(n => n.remove());
+
+  // Memory Manager node
+  createNode(canvas, 'memory', 'memory_manager', {
+    name: 'Memory Manager',
+    icon: '🧠',
+    subtitle: truncate(CONFIG.memory_manager.memory_capture_instructions, 60),
+    position: CONFIG.memory_manager.position,
+    tags: ['agentic_memory'],
+  });
+
+  // Team node
+  const team = CONFIG.team;
+  createNode(canvas, 'team', 'team', {
+    name: team.name,
+    icon: '👥',
+    subtitle: `${team.members.length} membri · thinking: ${team.thinking ? 'sì' : 'no'}`,
+    position: team.position,
+    tags: team.tools,
+    meta: `${team.num_history_runs} history runs`,
+  });
+
+  // Agent nodes
+  for (const [key, agent] of Object.entries(CONFIG.agents)) {
+    createNode(canvas, 'agent', `agent:${key}`, {
+      name: agent.name,
+      icon: '🤖',
+      subtitle: truncate(agent.role, 50),
+      position: agent.position,
+      tags: agent.tools,
+      meta: `thinking: ${agent.thinking ? 'sì' : 'no'}`,
+    });
+  }
+
+  // Tool nodes
+  for (const [key, tool] of Object.entries(CONFIG.tools)) {
+    createNode(canvas, 'tool', `tool:${key}`, {
+      name: tool.label,
+      icon: '🔧',
+      subtitle: tool.description,
+      position: tool.position,
+      tags: [],
+      meta: `${tool.methods.length} metodi`,
+    });
+  }
+
+  drawConnections();
+}
+
+function createNode(canvas, type, dataKey, opts) {
+  const el = document.createElement('div');
+  el.className = `node node-${type}`;
+  el.dataset.key = dataKey;
+  el.style.left = opts.position.x + 'px';
+  el.style.top = opts.position.y + 'px';
+
+  let tagsHtml = opts.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  let metaHtml = opts.meta ? `<div class="meta">${opts.meta}</div>` : '';
+
+  el.innerHTML = `
+    <div class="port port-in"></div>
+    <button class="edit-btn" aria-label="Modifica">✏️</button>
+    <div class="node-header">
+      <div class="icon">${opts.icon}</div>
+      <span>${opts.name}</span>
+    </div>
+    <div class="node-body">
+      <div>${opts.subtitle}</div>
+      ${tagsHtml ? '<div style="margin-top:6px">' + tagsHtml + '</div>' : ''}
+      ${metaHtml}
+    </div>
+    <div class="port port-out"></div>
+  `;
+
+  // Edit button (always visible on touch devices)
+  el.querySelector('.edit-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openPanel(dataKey);
+  });
+
+  // ── Mouse drag ──
+  el.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.port') || e.target.closest('.edit-btn')) return;
+    e.preventDefault();
+    startDrag(el, dataKey, e.clientX, e.clientY);
+  });
+
+  // ── Touch drag ──
+  el.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.port') || e.target.closest('.edit-btn')) return;
+    const t = e.touches[0];
+    startDrag(el, dataKey, t.clientX, t.clientY);
+  }, {passive: true});
+
+  // Double-click to edit (desktop)
+  el.addEventListener('dblclick', () => openPanel(dataKey));
+
+  canvas.appendChild(el);
+}
+
+function startDrag(el, key, clientX, clientY) {
+  el.classList.add('dragging');
+  dragState = {
+    el,
+    key,
+    startX: clientX,
+    startY: clientY,
+    origX: parseInt(el.style.left),
+    origY: parseInt(el.style.top),
+    moved: false,
+  };
+}
+
+// ── Drag handling (mouse + touch) ────────────────────────────
+function onDragMove(clientX, clientY) {
+  if (!dragState) return;
+  const dx = clientX - dragState.startX;
+  const dy = clientY - dragState.startY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragState.moved = true;
+  const newX = Math.max(0, dragState.origX + dx);
+  const newY = Math.max(0, dragState.origY + dy);
+  dragState.el.style.left = newX + 'px';
+  dragState.el.style.top = newY + 'px';
+  drawConnections();
+}
+
+function onDragEnd() {
+  if (!dragState) return;
+  dragState.el.classList.remove('dragging');
+  const key = dragState.key;
+  const x = parseInt(dragState.el.style.left);
+  const y = parseInt(dragState.el.style.top);
+  updatePosition(key, x, y);
+  dragState = null;
+}
+
+// Mouse
+document.addEventListener('mousemove', (e) => onDragMove(e.clientX, e.clientY));
+document.addEventListener('mouseup', onDragEnd);
+
+// Touch
+document.addEventListener('touchmove', (e) => {
+  if (!dragState) return;
+  e.preventDefault(); // prevent scroll while dragging a node
+  const t = e.touches[0];
+  onDragMove(t.clientX, t.clientY);
+}, {passive: false});
+document.addEventListener('touchend', onDragEnd);
+document.addEventListener('touchcancel', onDragEnd);
+
+function updatePosition(key, x, y) {
+  if (key === 'team') CONFIG.team.position = {x, y};
+  else if (key === 'memory_manager') CONFIG.memory_manager.position = {x, y};
+  else if (key.startsWith('agent:')) CONFIG.agents[key.split(':')[1]].position = {x, y};
+  else if (key.startsWith('tool:')) CONFIG.tools[key.split(':')[1]].position = {x, y};
+}
+
+// ── Connections (SVG curves) ─────────────────────────────────
+function drawConnections() {
+  const svg = document.getElementById('connections');
+  svg.innerHTML = '';
+  const canvas = document.getElementById('canvas');
+  const rect = canvas.getBoundingClientRect();
+  const scrollX = canvas.scrollLeft;
+  const scrollY = canvas.scrollTop;
+
+  const nodes = {};
+  canvas.querySelectorAll('.node').forEach(n => {
+    const r = n.getBoundingClientRect();
+    nodes[n.dataset.key] = {
+      x: r.left - rect.left + scrollX,
+      y: r.top - rect.top + scrollY,
+      w: r.width,
+      h: r.height,
+    };
+  });
+
+  const connections = [];
+
+  // Memory → Team
+  if (nodes['memory_manager'] && nodes['team']) {
+    connections.push({from: 'memory_manager', to: 'team', color: '#2a9d5c'});
+  }
+
+  // Team → Agents
+  for (const memberName of CONFIG.team.members) {
+    const agentKey = `agent:${memberName}`;
+    if (nodes['team'] && nodes[agentKey]) {
+      connections.push({from: 'team', to: agentKey, color: '#e94560'});
+    }
+  }
+
+  // Team → Team Tools
+  for (const toolName of CONFIG.team.tools) {
+    const toolKey = `tool:${toolName}`;
+    if (nodes['team'] && nodes[toolKey]) {
+      connections.push({from: toolKey, to: 'team', color: '#1a4a8a'});
+    }
+  }
+
+  // Agents → Agent Tools
+  for (const [agentName, agent] of Object.entries(CONFIG.agents)) {
+    for (const toolName of agent.tools) {
+      const toolKey = `tool:${toolName}`;
+      const agentKey = `agent:${agentName}`;
+      if (nodes[agentKey] && nodes[toolKey]) {
+        connections.push({from: toolKey, to: agentKey, color: '#7b2d8e'});
+      }
+    }
+  }
+
+  for (const conn of connections) {
+    const from = nodes[conn.from];
+    const to = nodes[conn.to];
+    const x1 = from.x + from.w;
+    const y1 = from.y + from.h / 2;
+    const x2 = to.x;
+    const y2 = to.y + to.h / 2;
+    const cx = Math.abs(x2 - x1) * 0.5;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M${x1},${y1} C${x1+cx},${y1} ${x2-cx},${y2} ${x2},${y2}`);
+    path.setAttribute('stroke', conn.color);
+    path.setAttribute('opacity', '0.6');
+    svg.appendChild(path);
+  }
+}
+
+// ── Panel Editor ─────────────────────────────────────────────
+function openPanel(key) {
+  currentEdit = key;
+  const overlay = document.getElementById('panelOverlay');
+  const title = document.getElementById('panelTitle');
+  const content = document.getElementById('panelContent');
+
+  let html = '';
+
+  if (key === 'team') {
+    const t = CONFIG.team;
+    title.textContent = `✏️ Team: ${t.name}`;
+    html = `
+      <label>Nome</label>
+      <input id="ed_name" value="${esc(t.name)}">
+      <label>Thinking</label>
+      <select id="ed_thinking">
+        <option value="true" ${t.thinking ? 'selected' : ''}>Sì</option>
+        <option value="false" ${!t.thinking ? 'selected' : ''}>No</option>
+      </select>
+      <label>History Runs</label>
+      <input id="ed_history" type="number" value="${t.num_history_runs}" min="0" max="20">
+      <label>Tools</label>
+      <div class="tools-list">${t.tools.map(x => `<span class="tool-badge">${x}</span>`).join('')}</div>
+      <label>Membri</label>
+      <div class="tools-list">${t.members.map(x => `<span class="tool-badge">${x}</span>`).join('')}</div>
+      <label>Instructions</label>
+      <textarea id="ed_instructions" rows="14">${esc(t.instructions)}</textarea>
+    `;
+  } else if (key === 'memory_manager') {
+    const m = CONFIG.memory_manager;
+    title.textContent = '✏️ Memory Manager';
+    html = `
+      <label>Memory Capture Instructions</label>
+      <textarea id="ed_memory_instructions" rows="8">${esc(m.memory_capture_instructions)}</textarea>
+    `;
+  } else if (key.startsWith('agent:')) {
+    const agentName = key.split(':')[1];
+    const a = CONFIG.agents[agentName];
+    title.textContent = `✏️ Agente: ${a.name}`;
+    html = `
+      <label>Nome</label>
+      <input id="ed_name" value="${esc(a.name)}">
+      <label>Ruolo</label>
+      <input id="ed_role" value="${esc(a.role)}">
+      <label>Thinking</label>
+      <select id="ed_thinking">
+        <option value="true" ${a.thinking ? 'selected' : ''}>Sì</option>
+        <option value="false" ${!a.thinking ? 'selected' : ''}>No</option>
+      </select>
+      <label>Tools</label>
+      <div class="tools-list">${a.tools.map(x => `<span class="tool-badge">${x}</span>`).join('')}</div>
+      <label>Instructions</label>
+      <textarea id="ed_instructions" rows="14">${esc(a.instructions)}</textarea>
+    `;
+  } else if (key.startsWith('tool:')) {
+    const toolName = key.split(':')[1];
+    const t = CONFIG.tools[toolName];
+    title.textContent = `🔧 ${t.label}`;
+    html = `
+      <label>Label</label>
+      <input id="ed_label" value="${esc(t.label)}">
+      <label>Descrizione</label>
+      <input id="ed_description" value="${esc(t.description)}">
+      <label>Metodi (${t.methods.length})</label>
+      <div class="tools-list">${t.methods.map(x => `<span class="tool-badge">${x}</span>`).join('')}</div>
+    `;
+  }
+
+  content.innerHTML = html;
+  overlay.classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panelOverlay').classList.remove('open');
+  currentEdit = null;
+}
+
+function applyPanel() {
+  if (!currentEdit) return;
+
+  if (currentEdit === 'team') {
+    CONFIG.team.name = val('ed_name');
+    CONFIG.team.thinking = val('ed_thinking') === 'true';
+    CONFIG.team.num_history_runs = parseInt(val('ed_history')) || 5;
+    CONFIG.team.instructions = val('ed_instructions');
+  } else if (currentEdit === 'memory_manager') {
+    CONFIG.memory_manager.memory_capture_instructions = val('ed_memory_instructions');
+  } else if (currentEdit.startsWith('agent:')) {
+    const name = currentEdit.split(':')[1];
+    CONFIG.agents[name].name = val('ed_name');
+    CONFIG.agents[name].role = val('ed_role');
+    CONFIG.agents[name].thinking = val('ed_thinking') === 'true';
+    CONFIG.agents[name].instructions = val('ed_instructions');
+  } else if (currentEdit.startsWith('tool:')) {
+    const name = currentEdit.split(':')[1];
+    CONFIG.tools[name].label = val('ed_label');
+    CONFIG.tools[name].description = val('ed_description');
+  }
+
+  closePanel();
+  render();
+  showToast('Modifiche applicate (salva per rendere permanenti)');
+}
+
+// ── API calls ────────────────────────────────────────────────
+async function saveConfig() {
+  try {
+    const res = await fetch('/agents/api/config', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(CONFIG),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    CONFIG = await res.json();
+    setStatus('Salvato ✓', true);
+    showToast('Configurazione salvata su disco');
+  } catch (e) {
+    setStatus('Errore salvataggio', false);
+    showToast('Errore: ' + e.message, true);
+  }
+}
+
+async function reloadAgents() {
+  try {
+    const res = await fetch('/agents/api/reload', {method: 'POST'});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    setStatus('Agenti ricaricati ✓', true);
+    showToast('Agenti ricaricati dal file di configurazione');
+  } catch (e) {
+    setStatus('Errore ricarica', false);
+    showToast('Errore: ' + e.message, true);
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function truncate(s, n) { return s.length > n ? s.substring(0, n) + '…' : s; }
+
+function setStatus(msg, ok) {
+  const el = document.getElementById('statusText');
+  el.textContent = msg;
+  el.className = 'status' + (ok ? ' ok' : '');
+  setTimeout(() => { el.textContent = ''; }, 4000);
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+// Close panel on overlay click (but not on panel itself)
+document.getElementById('panelOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closePanel();
+});
+
+// Keyboard shortcut
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePanel();
+  if (e.key === 's' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveConfig(); }
+});
+
+// Redraw connections on scroll/resize
+window.addEventListener('resize', drawConnections);
+document.getElementById('canvas').addEventListener('scroll', drawConnections);
+
+// ── Init ─────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
