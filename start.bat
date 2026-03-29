@@ -27,12 +27,9 @@ if exist "frontend\node_modules\" (
 )
 
 echo.
-echo   Home:      http://localhost:8000/
+echo   React SPA: http://localhost:5173/         (Home, Dashboard, Config, Chat)
 echo   Admin:     http://localhost:8000/admin
 echo   Shop:      http://localhost:8000/shop/register
-echo   Chat:      http://localhost:8000/chat
-echo   Dashboard: http://localhost:8000/agents/
-echo   Config:    http://localhost:8000/config/
 echo.
 
 echo Avvio pannello web...
