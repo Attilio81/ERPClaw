@@ -1,4 +1,4 @@
-import type { AgentConfig, ChatMessage, EnvConfig } from './types'
+import type { AgentConfig, ChatMessage, EnvConfig, CrmEvent, CrmNote } from './types'
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options)
@@ -44,5 +44,40 @@ export const chatApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
+    }),
+}
+
+export const crmApi = {
+  getMonthEvents: (anno: number, mese: number) =>
+    apiFetch<CrmEvent[]>(`/crm/api/eventi?anno=${anno}&mese=${mese}`),
+
+  getEvent: (id: number) =>
+    apiFetch<CrmEvent>(`/crm/api/eventi/${id}`),
+
+  createEvent: (data: { tipo: string; data_ora: string; cliente_id?: number; luogo?: string; note?: string; durata_minuti?: number }) =>
+    apiFetch<CrmEvent>('/crm/api/eventi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
+  updateEvent: (id: number, data: Partial<CrmEvent>) =>
+    apiFetch<CrmEvent>(`/crm/api/eventi/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
+  deleteEvent: (id: number) =>
+    apiFetch<{ ok: boolean }>(`/crm/api/eventi/${id}`, { method: 'DELETE' }),
+
+  getClienteStorico: (clienteId: number) =>
+    apiFetch<{ eventi: CrmEvent[]; note: CrmNote[] }>(`/crm/api/clienti/${clienteId}/storico`),
+
+  addNota: (clienteId: number, testo: string) =>
+    apiFetch<CrmNote>(`/crm/api/clienti/${clienteId}/note`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ testo }),
     }),
 }

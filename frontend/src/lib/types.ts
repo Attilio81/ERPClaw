@@ -56,3 +56,25 @@ export interface EnvConfig {
   DEEPSEEK_API_KEY: string
   SHOP_SECRET_KEY: string
 }
+
+export interface CrmEvent {
+  id: number
+  tipo: 'visita' | 'chiamata' | 'email'
+  stato: 'pianificato' | 'completato' | 'annullato'
+  data_ora: string
+  durata_minuti: number | null
+  luogo: string | null
+  esito: string | null
+  note: string | null
+  cliente_id: number | null
+  cliente_nome: string | null
+  reminder_inviato: boolean
+}
+
+export interface CrmNote {
+  id: number
+  cliente_id: number
+  testo: string
+  data_ora: string
+  autore: string | null
+}
