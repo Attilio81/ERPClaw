@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Bot, Settings, MessageSquare, ExternalLink } from 'lucide-react'
+import { Home, Bot, Settings, MessageSquare, ExternalLink, Users } from 'lucide-react'
 
 const links = [
   { to: '/',       icon: Home,          label: 'Home',    end: true },
   { to: '/agents', icon: Bot,           label: 'Agenti',  end: false },
   { to: '/config', icon: Settings,      label: 'Config',  end: false },
   { to: '/chat',   icon: MessageSquare, label: 'Chat',    end: false },
+  { to: '/crm',    icon: Users,         label: 'CRM',     end: false },
 ]
 
 export function Sidebar() {

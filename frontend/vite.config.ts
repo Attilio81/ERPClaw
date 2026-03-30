@@ -13,6 +13,7 @@ export default defineConfig({
       '/agents': 'http://localhost:8000',
       '/config': 'http://localhost:8000',
       '/chat':   'http://localhost:8000',
+      '/crm':    'http://localhost:8000',
       '/shop':   'http://localhost:8000',
       '/admin':  'http://localhost:8000',
     },

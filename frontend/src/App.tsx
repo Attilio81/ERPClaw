@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import AgentDashboard from './pages/AgentDashboard'
 import ConfigPanel from './pages/ConfigPanel'
 import Chat from './pages/Chat'
+import CrmCalendar from './pages/CrmCalendar'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
               <Route path="/agents" element={<AgentDashboard />} />
               <Route path="/config" element={<ConfigPanel />} />
               <Route path="/chat" element={<Chat />} />
+              <Route path="/crm" element={<CrmCalendar />} />
             </Routes>
           </main>
         </div>
