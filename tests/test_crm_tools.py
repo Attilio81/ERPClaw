@@ -85,6 +85,15 @@ def test_agenda_oggi(tools):
     assert "email" in result
 
 
+def test_agenda_settimana(tools):
+    t, _ = tools
+    from datetime import timedelta
+    tra_3_giorni = (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d %H:%M")
+    t.crea_evento(tipo="visita", data_ora=tra_3_giorni)
+    result = t.agenda_settimana()
+    assert "visita" in result
+
+
 def test_completa_evento(tools):
     t, ms = tools
     t.crea_evento(tipo="visita", data_ora="2026-04-01 09:00")
