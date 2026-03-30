@@ -14,6 +14,8 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
                                                        ↘ FornitoreResearchAgent → web search / PDF
 ```
 
+![Bot Telegram](telegram.png)
+
 ## Funzionalità
 
 - **Magazzino e ubicazioni** — gerarchia fisica Magazzino→Zona→Scaffale→Ripiano; stock per ubicazione
@@ -33,6 +35,7 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
 - **Portale shop clienti** — i clienti si registrano e ordinano via browser (`/shop`), senza Telegram
 - **Dashboard agenti** — visualizzazione e gestione del team AI in stile n8n (`/agents`)
 - **Pannello configurazione** — modifica il file `.env` dal browser senza aprirlo (`/config`)
+- **Chat web** — interagisce con l'agente AI direttamente dal browser, senza Telegram (`/chat`)
 - **Homepage** — menu centrale con accesso rapido a tutte le sezioni (`/`)
 - **Memoria** — l'agente ricorda preferenze e contesto per ogni utente Telegram
 
@@ -71,6 +74,16 @@ Accessibile su **`http://localhost:5173/agents`** (dev) o **`http://localhost:80
 | Agenti (es. RicercaFornitore) | Viola | Ruolo, instructions, thinking on/off |
 | Tool (ERPTools, LogisticaTools, ecc.) | Blu | Descrizione, lista metodi |
 | Memory Manager | Verde | Istruzioni di cattura memoria |
+
+## Chat Web
+
+Interfaccia chat integrata nel pannello web per interagire con l'agente AI direttamente dal browser, senza Telegram.
+
+![Chat Web](chat.png)
+
+Accessibile su **`http://localhost:5173/chat`** (dev) o **`http://localhost:8000/chat`** (produzione)
+
+---
 
 ## Stack tecnico
 
