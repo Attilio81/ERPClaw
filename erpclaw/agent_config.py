@@ -25,7 +25,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "name": "ERPClaw",
         "thinking": True,
         "num_history_runs": 5,
-        "tools": ["ERPTools", "LogisticaTools"],
+        "tools": ["ERPTools", "LogisticaTools", "CrmTools"],
         "members": ["RicercaFornitore"],
         "instructions": (
             "Sei l'assistente del gestionale aziendale ERPClaw.\n"
@@ -51,7 +51,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "- Per caricare stock usa assegna_stock; per spostarlo usa trasferisci_stock.\n"
             "- Quando un ordine viene marcato come 'spedito', proponi all'utente di eseguire scarica_ordine_da_ubicazione.\n"
             "- Per verificare dove si trova un articolo usa stock_per_articolo; per vedere cosa c'è in un ripiano usa stock_per_ubicazione.\n"
-            "- Segnala proattivamente gli articoli senza ubicazione con articoli_senza_ubicazione."
+            "- Segnala proattivamente gli articoli senza ubicazione con articoli_senza_ubicazione.\n"
+            "\n"
+            "Gestione CRM:\n"
+            "- Per pianificare visite, chiamate o email usa crea_evento (tipo: visita/chiamata/email).\n"
+            "- Per vedere l'agenda del giorno usa agenda_oggi; per la settimana usa agenda_settimana.\n"
+            "- Quando una visita è avvenuta, usa completa_evento con un esito.\n"
+            "- Per appunti su un cliente senza data specifica usa aggiungi_nota.\n"
+            "- Per vedere tutto lo storico CRM di un cliente usa storico_cliente.\n"
         ),
         "position": {"x": 400, "y": 300},
     },
@@ -113,6 +120,16 @@ DEFAULT_CONFIG: dict[str, Any] = {
                 "storico_movimenti",
             ],
             "position": {"x": 100, "y": 450},
+        },
+        "CrmTools": {
+            "label": "CRM Tools",
+            "description": "Visite clienti, chiamate, email, note e agenda CRM",
+            "methods": [
+                "crea_evento", "lista_eventi", "agenda_oggi", "agenda_settimana",
+                "aggiorna_evento", "completa_evento", "annulla_evento",
+                "aggiungi_nota", "note_cliente", "storico_cliente",
+            ],
+            "position": {"x": 100, "y": 650},
         },
         "DuckDuckGoTools": {
             "label": "DuckDuckGo Search",

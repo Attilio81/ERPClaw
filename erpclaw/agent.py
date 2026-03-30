@@ -32,6 +32,7 @@ from erpclaw.config import DEEPSEEK_API_KEY, LLM_MODEL_ID, LLM_PROVIDER, LMSTUDI
 from erpclaw.erp_tools import ERPTools
 from erpclaw.fornitore_research_tools import FornitoreResearchTools
 from erpclaw.logistica_tools import LogisticaTools
+from erpclaw.crm_tools import CrmTools
 
 
 def _make_model(thinking: bool = False):
@@ -51,6 +52,7 @@ def _make_model(thinking: bool = False):
 TOOL_CLASSES = {
     "ERPTools": ERPTools,
     "LogisticaTools": LogisticaTools,
+    "CrmTools": CrmTools,
     "DuckDuckGoTools": SafeDuckDuckGoTools,
     "FornitoreResearchTools": FornitoreResearchTools,
 }
