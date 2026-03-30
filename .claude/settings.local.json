@@ -16,7 +16,13 @@
       "Bash(python:*)",
       "Bash(taskkill:*)",
       "Bash(git:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "mcp__agno-docs__list_agno_sections",
+      "mcp__agno-docs__search_agno_docs",
+      "mcp__agno-docs__get_agno_page",
+      "Bash(cd:*)",
+      "Bash(uv pip:*)",
+      "Bash(.venv/Scripts/pytest.exe tests/)"
     ]
   }
 }
