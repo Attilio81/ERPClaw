@@ -21,10 +21,9 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
 - **Magazzino e ubicazioni** — gerarchia fisica Magazzino→Zona→Scaffale→Ripiano; stock per ubicazione
 - **Movimenti di magazzino** — carico, scarico, trasferimento con storico completo
 - **Integrazione ordini-magazzino** — scarico automatico dalle ubicazioni quando un ordine è spedito (strategia LIFO)
-- **Fornitori** — ricerca web, salvataggio anagrafica, download cataloghi PDF
+- **Fornitori** — ricerca web, salvataggio anagrafica, indirizzi multi-tipo, download cataloghi PDF
 - **Importazione cataloghi** — parsing PDF, ricerca prezzi online, inserimento articoli con margine personalizzabile
 - **Clienti** — anagrafica con indirizzi multi-tipo (sede legale, spedizione, fatturazione)
-- **Fornitori** — anagrafica con indirizzi multi-tipo
 - **Ordini clienti** — creazione, gestione stati (`bozza → confermato → spedito → chiuso`)
 - **Ordini fornitori** — creazione e gestione ordini di acquisto (`bozza → inviato → ricevuto`) con prezzo di acquisto per articolo
 - **Prezzi duali** — ogni articolo ha `prezzo_vendita` (ai clienti) e `prezzo_acquisto` (dai fornitori)
@@ -45,7 +44,7 @@ Menu centrale con accesso rapido a tutte le sezioni del pannello web.
 
 ![Homepage](home.png)
 
-Accessibile su **`http://localhost:8000/`**
+Accessibile su **`http://localhost:5173/`** (dev) o **`http://localhost:8000/`** (produzione)
 
 ---
 
@@ -275,7 +274,7 @@ frontend/                       # React SPA (Vite + TypeScript + shadcn/ui)
 ├── package.json
 └── vite.config.ts              # proxy /agents /config /chat /admin → :8000
 
-agent_config.json               # configurazione agenti (generato al primo avvio)
+agent_config.json               # configurazione agenti (default incluso nel repo)
 tests/                          # suite pytest (SQLite in-memory)
 docs/
 ├── lmstudio-settings.md        # impostazioni consigliate LM Studio
