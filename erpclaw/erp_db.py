@@ -100,7 +100,7 @@ class Cliente(Base):
 
     ordini = relationship("Ordine", back_populates="cliente")
     indirizzi = relationship("Indirizzo", back_populates="cliente", cascade="all, delete-orphan")
-    eventi_crm = relationship("EventoCRM", back_populates="cliente", cascade="all, delete-orphan")
+    eventi_crm = relationship("EventoCRM", back_populates="cliente", cascade="save-update, merge")
     note_crm = relationship("NotaCRM", back_populates="cliente", cascade="all, delete-orphan")
 
 
@@ -252,6 +252,9 @@ class NotaCRM(Base):
     autore = Column(String, nullable=True)
 
     cliente = relationship("Cliente", back_populates="note_crm")
+
+    def __str__(self):
+        return f"{self.testo[:50]}"
 
 
 class Magazzino(Base):
