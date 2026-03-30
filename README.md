@@ -10,7 +10,8 @@ L'utente manda un messaggio su Telegram, anche vocale. L'agente AI (LM Studio in
 
 ```
 Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        → erp.db
-                                                       → LogisticaTools  → erp.db
+                  ↑ APScheduler (reminder CRM ogni 1m) → LogisticaTools  → erp.db
+                                                       → CrmTools        → erp.db
                                                        ↘ FornitoreResearchAgent → web search / PDF
 ```
 
@@ -35,6 +36,8 @@ Telegram → bot.py → agno Team (LM Studio / DeepSeek) → ERPTools        →
 - **Dashboard agenti** — visualizzazione e gestione del team AI in stile n8n (`/agents`)
 - **Pannello configurazione** — modifica il file `.env` dal browser senza aprirlo (`/config`)
 - **Chat web** — interagisce con l'agente AI direttamente dal browser, senza Telegram (`/chat`)
+- **CRM** — gestione visite, chiamate, email per cliente; agenda giornaliera/settimanale; note libere; storico completo per cliente; reminder automatici 60 min prima via Telegram con link Google Maps
+- **Calendario CRM** — vista mensile a griglia con badge colorati per tipo evento; creazione rapida dal giorno; dettaglio e azioni (completa/annulla) su singolo evento (`/crm`)
 - **Homepage** — menu centrale con accesso rapido a tutte le sezioni (`/`)
 - **Memoria** — l'agente ricorda preferenze e contesto per ogni utente Telegram
 
@@ -95,6 +98,7 @@ Accessibile su **`http://localhost:5173/chat`** (dev) o **`http://localhost:8000
 | Database ERP | SQLite + SQLAlchemy |
 | Bot Telegram | python-telegram-bot |
 | Pannello web + shop | FastAPI + SQLAdmin + HTMX + Bootstrap 5 |
+| Reminder CRM | APScheduler (AsyncIOScheduler, polling ogni minuto) |
 | Frontend SPA (admin) | Vite 6 + React 19 + TypeScript 5 + Tailwind CSS 4 + shadcn/ui + @xyflow/react |
 | Package manager | [uv](https://github.com/astral-sh/uv) |
 | Python | 3.13 |
@@ -158,6 +162,7 @@ npm run dev
 # → Dashboard: http://localhost:5173/agents
 # → Config:    http://localhost:5173/config
 # → Chat:      http://localhost:5173/chat
+# → CRM:       http://localhost:5173/crm
 
 # Avvia tutto insieme (Windows) — bot + backend + frontend React
 start.bat
@@ -252,7 +257,9 @@ erpclaw/
 ├── agents_dashboard.py         # API JSON agenti (/agents/api/*)
 ├── config_panel.py             # API JSON configurazione .env (/config/api)
 ├── chat.py                     # API JSON chat (/chat/api/*)
-├── bot.py                      # bot Telegram (testo + voce)
+├── crm.py                      # API JSON CRM (/crm/api/*)
+├── crm_tools.py                # tool CRM agno (eventi, note, agenda, storico)
+├── bot.py                      # bot Telegram (testo + voce) + APScheduler reminder CRM
 ├── web.py                      # FastAPI: admin + shop + SPA catch-all
 ├── shop.py                     # portale ordini clienti (/shop, HTMX)
 ├── erp_db.py                   # modelli SQLAlchemy + init DB
@@ -265,14 +272,14 @@ erpclaw/
 
 frontend/                       # React SPA (Vite + TypeScript + shadcn/ui)
 ├── src/
-│   ├── pages/                  # Home, AgentDashboard, ConfigPanel, Chat
+│   ├── pages/                  # Home, AgentDashboard, ConfigPanel, Chat, CrmCalendar
 │   ├── components/
 │   │   ├── layout/             # Sidebar, TopBar
 │   │   ├── agents/             # nodi xyflow + NodeEditSheet + flowUtils
 │   │   └── config/             # EnvSection
 │   └── lib/                    # types.ts, api.ts
 ├── package.json
-└── vite.config.ts              # proxy /agents /config /chat /admin → :8000
+└── vite.config.ts              # proxy /agents /config /chat /crm /admin → :8000
 
 agent_config.json               # configurazione agenti (default incluso nel repo)
 tests/                          # suite pytest (SQLite in-memory)
@@ -297,6 +304,7 @@ Tutte le tabelle risiedono in `erp.db` (SQLite):
 | Fornitori | `fornitori`, `cataloghi_fornitori` |
 | Magazzino | `magazzini`, `zone`, `scaffali`, `ripiani` |
 | Movimenti | `movimenti_magazzino` |
+| CRM | `eventi_crm`, `note_crm` |
 
 `Articolo.giacenza` è una `column_property` derivata (somma di `StockUbicazione.quantita`).
 
