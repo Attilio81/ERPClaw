@@ -2,7 +2,10 @@
 
 import logging
 import tempfile
+from datetime import datetime, timedelta
+from urllib.parse import quote
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from openai import AsyncOpenAI
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
@@ -125,9 +128,55 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await _reply(update, response)
 
 
+async def _post_init(application: Application) -> None:
+    """Start APScheduler for CRM reminders after bot initialization."""
+    from erpclaw.erp_db import get_session, EventoCRM, StatoEventoCRM
+
+    async def check_reminders() -> None:
+        now = datetime.now()
+        in_60 = now + timedelta(minutes=60)
+        with get_session() as s:
+            events = (
+                s.query(EventoCRM)
+                .filter(
+                    EventoCRM.stato == StatoEventoCRM.pianificato,
+                    EventoCRM.reminder_inviato == False,  # noqa: E712
+                    EventoCRM.data_ora >= now,
+                    EventoCRM.data_ora <= in_60,
+                )
+                .all()
+            )
+            to_notify = []
+            for ev in events:
+                cliente_nome = (
+                    ev.cliente.ragione_sociale if ev.cliente else "Evento senza cliente"
+                )
+                to_notify.append(
+                    (ev.tipo.value, cliente_nome, ev.data_ora.strftime("%H:%M"), ev.luogo)
+                )
+                ev.reminder_inviato = True
+            s.commit()
+
+        for tipo, cliente_nome, orario, luogo in to_notify:
+            msg = f"⏰ *Reminder CRM*\n{tipo.capitalize()}: {cliente_nome}\nOre {orario}"
+            if luogo:
+                maps_url = f"https://maps.google.com/?q={quote(luogo)}"
+                msg += f"\n📍 [{luogo}]({maps_url})"
+            await application.bot.send_message(
+                chat_id=ALLOWED_CHAT_ID,
+                text=msg,
+                parse_mode="Markdown",
+            )
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(check_reminders, "interval", minutes=1)
+    scheduler.start()
+    logger.info("CRM reminder scheduler started")
+
+
 def create_app() -> Application:
     """Build and return the Telegram Application (bot)."""
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(_post_init).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, handle_voice))
