@@ -89,6 +89,8 @@ class CrmTools(Toolkit):
         try:
             d1 = datetime.fromisoformat(data_inizio)
             d2 = datetime.fromisoformat(data_fine)
+            if len(data_fine.strip()) == 10:  # solo data senza orario → fine giornata
+                d2 = d2.replace(hour=23, minute=59, second=59)
         except ValueError:
             return "Errore: date non valide. Formato: YYYY-MM-DD"
         with get_session() as s:

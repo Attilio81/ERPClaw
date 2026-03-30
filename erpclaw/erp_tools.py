@@ -117,9 +117,12 @@ class ERPTools(Toolkit):
         with get_session() as s:
             if s.query(Cliente).filter_by(codice=codice).first():
                 return f"Errore: esiste già un cliente con codice {codice}."
-            s.add(Cliente(codice=codice, ragione_sociale=ragione_sociale, email=email, telefono=telefono))
+            c = Cliente(codice=codice, ragione_sociale=ragione_sociale, email=email, telefono=telefono)
+            s.add(c)
+            s.flush()
+            cliente_id = c.id
             s.commit()
-        return f"Cliente **{codice} – {ragione_sociale}** creato ✓"
+        return f"Cliente **{codice} – {ragione_sociale}** creato ✓ (cliente_id={cliente_id})"
 
     def lista_clienti(self) -> str:
         """Restituisce la lista di tutti i clienti."""
