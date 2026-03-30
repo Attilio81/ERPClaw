@@ -42,6 +42,18 @@ class StatoOrdineFornitore(str, enum.Enum):
     ricevuto = "ricevuto"
 
 
+class TipoEventoCRM(str, enum.Enum):
+    visita = "visita"
+    chiamata = "chiamata"
+    email = "email"
+
+
+class StatoEventoCRM(str, enum.Enum):
+    pianificato = "pianificato"
+    completato = "completato"
+    annullato = "annullato"
+
+
 class Categoria(Base):
     __tablename__ = "categorie"
 
@@ -88,6 +100,8 @@ class Cliente(Base):
 
     ordini = relationship("Ordine", back_populates="cliente")
     indirizzi = relationship("Indirizzo", back_populates="cliente", cascade="all, delete-orphan")
+    eventi_crm = relationship("EventoCRM", back_populates="cliente", cascade="all, delete-orphan")
+    note_crm = relationship("NotaCRM", back_populates="cliente", cascade="all, delete-orphan")
 
 
 class Ordine(Base):
@@ -206,6 +220,38 @@ class ClienteAuth(Base):
     confermato = Column(Boolean, nullable=False, default=True)
 
     cliente = relationship("Cliente", backref="auth")
+
+
+class EventoCRM(Base):
+    __tablename__ = "eventi_crm"
+
+    id = Column(Integer, primary_key=True)
+    cliente_id = Column(Integer, ForeignKey("clienti.id"), nullable=True)
+    tipo = Column(Enum(TipoEventoCRM), nullable=False)
+    data_ora = Column(DateTime, nullable=False)
+    durata_minuti = Column(Integer, nullable=True)
+    luogo = Column(String, nullable=True)
+    esito = Column(String, nullable=True)
+    note = Column(Text, nullable=True)
+    stato = Column(Enum(StatoEventoCRM), nullable=False, default=StatoEventoCRM.pianificato)
+    reminder_inviato = Column(Boolean, nullable=False, default=False)
+
+    cliente = relationship("Cliente", back_populates="eventi_crm")
+
+    def __str__(self):
+        return f"{self.tipo.value} {self.data_ora.strftime('%d/%m/%Y %H:%M')}"
+
+
+class NotaCRM(Base):
+    __tablename__ = "note_crm"
+
+    id = Column(Integer, primary_key=True)
+    cliente_id = Column(Integer, ForeignKey("clienti.id"), nullable=False)
+    testo = Column(Text, nullable=False)
+    data_ora = Column(DateTime, nullable=False, default=datetime.now)
+    autore = Column(String, nullable=True)
+
+    cliente = relationship("Cliente", back_populates="note_crm")
 
 
 class Magazzino(Base):
