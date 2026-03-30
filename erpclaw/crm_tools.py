@@ -61,9 +61,10 @@ class CrmTools(Toolkit):
                 reminder_inviato=False,
             )
             s.add(ev)
-            s.commit()
+            s.flush()
             ev_id = ev.id
             cliente_nome = ev.cliente.ragione_sociale if ev.cliente else "—"
+            s.commit()
         return f"Evento **{tipo}** creato (ID {ev_id}) per {cliente_nome} il {dt.strftime('%d/%m/%Y %H:%M')} ✓"
 
     def _format_eventi(self, eventi) -> str:
@@ -248,33 +249,33 @@ class CrmTools(Toolkit):
             )
             ragione = c.ragione_sociale
 
-        result = f"## Storico CRM — {ragione}\n\n"
-        if eventi:
-            rows = "\n".join(
-                f"| {ev.id} | {ev.tipo.value} | {ev.data_ora.strftime('%d/%m/%Y %H:%M')} | "
-                f"{ev.stato.value} | {ev.esito or '—'} |"
-                for ev in eventi
-            )
-            result += (
-                "### 📅 Eventi\n"
-                "| ID | Tipo | Data/Ora | Stato | Esito |\n"
-                "|----|------|----------|-------|-------|\n"
-                + rows + "\n\n"
-            )
-        else:
-            result += "### 📅 Eventi\nNessun evento.\n\n"
+            result = f"## Storico CRM — {ragione}\n\n"
+            if eventi:
+                rows = "\n".join(
+                    f"| {ev.id} | {ev.tipo.value} | {ev.data_ora.strftime('%d/%m/%Y %H:%M')} | "
+                    f"{ev.stato.value} | {ev.esito or '—'} |"
+                    for ev in eventi
+                )
+                result += (
+                    "### 📅 Eventi\n"
+                    "| ID | Tipo | Data/Ora | Stato | Esito |\n"
+                    "|----|------|----------|-------|-------|\n"
+                    + rows + "\n\n"
+                )
+            else:
+                result += "### 📅 Eventi\nNessun evento.\n\n"
 
-        if note:
-            rows = "\n".join(
-                f"| {n.id} | {n.data_ora.strftime('%d/%m/%Y %H:%M')} | {n.testo[:100]} |"
-                for n in note
-            )
-            result += (
-                "### 📝 Note\n"
-                "| ID | Data | Testo |\n|----|------|-------|\n"
-                + rows
-            )
-        else:
-            result += "### 📝 Note\nNessuna nota."
+            if note:
+                rows = "\n".join(
+                    f"| {n.id} | {n.data_ora.strftime('%d/%m/%Y %H:%M')} | {n.testo[:100]} |"
+                    for n in note
+                )
+                result += (
+                    "### 📝 Note\n"
+                    "| ID | Data | Testo |\n|----|------|-------|\n"
+                    + rows
+                )
+            else:
+                result += "### 📝 Note\nNessuna nota."
 
-        return result
+            return result

@@ -101,8 +101,10 @@ async def create_evento(body: _EventoCreate):
             reminder_inviato=False,
         )
         s.add(ev)
+        s.flush()
+        data = _ev_dict(ev)
         s.commit()
-        return JSONResponse(_ev_dict(ev), status_code=201)
+        return JSONResponse(data, status_code=201)
 
 
 @router.put("/api/eventi/{evento_id}")
@@ -135,8 +137,10 @@ async def update_evento(evento_id: int, body: _EventoUpdate):
             ev.esito = body.esito
         if body.note is not None:
             ev.note = body.note
+        s.flush()
+        data = _ev_dict(ev)
         s.commit()
-        return JSONResponse(_ev_dict(ev))
+        return JSONResponse(data)
 
 
 @router.delete("/api/eventi/{evento_id}")
