@@ -11,6 +11,7 @@ from erpclaw.erp_db import (
     Indirizzo,
     Magazzino, Zona, Scaffale, Ripiano, StockUbicazione, MovimentoMagazzino,
     OrdineFornitore, RigaOrdineFornitore,
+    EventoCRM, NotaCRM,
 )
 
 init_db()
@@ -28,10 +29,12 @@ from erpclaw.shop import router as shop_router
 from erpclaw.chat import router as chat_router
 from erpclaw.agents_dashboard import router as agents_router
 from erpclaw.config_panel import router as config_router
+from erpclaw.crm import router as crm_router
 app.include_router(shop_router)
 app.include_router(chat_router)
 app.include_router(agents_router)
 app.include_router(config_router)
+app.include_router(crm_router)
 
 @app.get("/admin", include_in_schema=False)
 async def admin_redirect():
@@ -198,6 +201,27 @@ admin.add_view(RipianoAdmin)
 admin.add_view(StockUbicazioneAdmin)
 admin.add_view(MovimentoMagazzinoAdmin)
 
+
+class EventoCRMAdmin(ModelView, model=EventoCRM):
+    name = "Evento CRM"
+    name_plural = "Eventi CRM"
+    icon = "fa-solid fa-calendar-check"
+    column_list = [EventoCRM.tipo, EventoCRM.stato, EventoCRM.data_ora, EventoCRM.cliente, EventoCRM.luogo]
+    column_searchable_list = [EventoCRM.luogo, EventoCRM.note]
+    column_sortable_list = [EventoCRM.data_ora, EventoCRM.tipo, EventoCRM.stato]
+
+
+class NotaCRMAdmin(ModelView, model=NotaCRM):
+    name = "Nota CRM"
+    name_plural = "Note CRM"
+    icon = "fa-solid fa-note-sticky"
+    column_list = [NotaCRM.cliente, NotaCRM.data_ora, NotaCRM.testo]
+    column_sortable_list = [NotaCRM.data_ora]
+
+
+admin.add_view(EventoCRMAdmin)
+admin.add_view(NotaCRMAdmin)
+
 # ── SPA catch-all (solo se frontend/dist esiste) ──────────────────────────────
 from pathlib import Path as _Path
 from fastapi.staticfiles import StaticFiles
@@ -212,7 +236,7 @@ if (_DIST / "assets").exists():
 @app.get("/{full_path:path}", include_in_schema=False)
 async def spa_fallback(full_path: str):
     # Non intercettare le rotte backend (admin ha il suo redirect sopra)
-    for prefix in ("shop", "config", "chat", "agents"):
+    for prefix in ("shop", "config", "chat", "agents", "crm"):
         if full_path == prefix or full_path.startswith(prefix + "/"):
             raise HTTPException(status_code=404)
     index = _DIST / "index.html"
