@@ -44,10 +44,15 @@ export default function CrmCalendar() {
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
   const [events, setEvents] = useState<CrmEvent[]>([])
+  const [clienti, setClienti] = useState<{ id: number; ragione_sociale: string }[]>([])
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<CrmEvent | null>(null)
-  const [newForm, setNewForm] = useState({ tipo: 'visita', data_ora: '', luogo: '', note: '' })
+  const [newForm, setNewForm] = useState({ tipo: 'visita', data_ora: '', cliente_id: '', luogo: '', note: '' })
+
+  useEffect(() => {
+    crmApi.getClienti().then(setClienti).catch(() => {})
+  }, [])
 
   useEffect(() => {
     crmApi.getMonthEvents(year, month)
@@ -85,7 +90,7 @@ export default function CrmCalendar() {
     setSelectedDay(day)
     setSelectedEvent(null)
     const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T09:00`
-    setNewForm({ tipo: 'visita', data_ora: dayStr, luogo: '', note: '' })
+    setNewForm({ tipo: 'visita', data_ora: dayStr, cliente_id: '', luogo: '', note: '' })
     setSheetOpen(true)
   }
 
@@ -123,6 +128,7 @@ export default function CrmCalendar() {
       const ev = await crmApi.createEvent({
         tipo: newForm.tipo,
         data_ora: newForm.data_ora.replace('T', ' '),
+        cliente_id: newForm.cliente_id ? Number(newForm.cliente_id) : undefined,
         luogo: newForm.luogo || undefined,
         note: newForm.note || undefined,
       })
@@ -325,6 +331,16 @@ export default function CrmCalendar() {
                     <option value="visita">Visita</option>
                     <option value="chiamata">Chiamata</option>
                     <option value="email">Email</option>
+                  </select>
+                  <select
+                    value={newForm.cliente_id}
+                    onChange={e => setNewForm(f => ({ ...f, cliente_id: e.target.value }))}
+                    className="bg-[#0f3460]/40 border border-[#0f3460] rounded px-2 py-1.5 text-xs text-gray-200 w-full"
+                  >
+                    <option value="">Cliente (opzionale)</option>
+                    {clienti.map(c => (
+                      <option key={c.id} value={c.id}>{c.ragione_sociale}</option>
+                    ))}
                   </select>
                   <Input
                     type="datetime-local"

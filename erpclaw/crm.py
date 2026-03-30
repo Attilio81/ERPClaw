@@ -55,6 +55,14 @@ def _ev_dict(ev: EventoCRM) -> dict:
     }
 
 
+@router.get("/api/clienti")
+async def list_clienti():
+    """All clients — used by the React calendar for the client selector."""
+    with get_session() as s:
+        clienti = s.query(Cliente).order_by(Cliente.ragione_sociale).all()
+        return JSONResponse([{"id": c.id, "ragione_sociale": c.ragione_sociale} for c in clienti])
+
+
 @router.get("/api/eventi")
 async def list_eventi(anno: int, mese: int):
     """Events for a given month — used by the React calendar feed."""

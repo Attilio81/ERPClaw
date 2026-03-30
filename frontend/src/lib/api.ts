@@ -48,6 +48,9 @@ export const chatApi = {
 }
 
 export const crmApi = {
+  getClienti: () =>
+    apiFetch<{ id: number; ragione_sociale: string }[]>('/crm/api/clienti'),
+
   getMonthEvents: (anno: number, mese: number) =>
     apiFetch<CrmEvent[]>(`/crm/api/eventi?anno=${anno}&mese=${mese}`),
 
